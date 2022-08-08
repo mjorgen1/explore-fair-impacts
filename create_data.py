@@ -51,14 +51,14 @@ def load_and_parse(data_dir):
     """
 
     # set plotting parameters
-    sns.set_context("talk")
-    sns.set_style("white")
+    sns.set_context('talk')
+    sns.set_style('white')
     # this needs to be here so we can edit figures later
     plt.rcParams['pdf.fonttype'] = 42
 
     all_cdfs, performance, totals = fico.get_FICO_data(data_dir= data_dir);
 
-    cdfs = all_cdfs[["White","Black"]]
+    cdfs = all_cdfs[['White','Black']]
     # B is White; A is Black
     cdf_B = cdfs['White'].values
     cdf_A = cdfs['Black'].values
@@ -80,7 +80,7 @@ def load_and_parse(data_dir):
     pis = np.vstack([pi_A, pi_B])
 
     # demographic statistics
-    group_ratio = np.array((totals["Black"], totals["White"]))
+    group_ratio = np.array((totals['Black'], totals['White']))
     group_size_ratio = group_ratio/group_ratio.sum()
 
     # to get loan repay probabilities for a given score
@@ -120,7 +120,7 @@ def get_repay_probabilities(samples, repay_probs, round_num):
         elif round_num == 2:
             repay_prob = round(repay_probs[prob_index[0][0]], 0)
         else:
-            print('ISSUE: enter a valid round_num value (0,1,2)')
+            raise ValueError('unvalid ound_num value (0,1,2)')
         sample_probs.insert(index, repay_prob)
     return np.asarray(sample_probs)
 
@@ -153,8 +153,8 @@ def get_scores(scores, round_num):  # takes in a list and returns a list
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Specify the path from where the data should be loaded and where the preprocessed datasets should be stored')
-    parser.add_argument('-input', type=str, help="Path to data folders")
-    parser.add_argument('-output', type=str,help="Path to where the preprocessed datasets should be stored")
+    parser.add_argument('-input', type=str, help='Path to data folders')
+    parser.add_argument('-output', type=str,help='Path to where the preprocessed datasets should be stored')
 
     args = parser.parse_args()
 
@@ -226,7 +226,7 @@ if __name__ == "__main__":
     data_all_df_shuffled['repay_indices'] = np.array(repay_indices)
 
     #Save pandas Dataframes in CSV
-    data_all_df_shuffled.to_csv(index=False, path_or_buf=args.output+"/simData_oom100.csv")
+    data_all_df_shuffled.to_csv(index=False, path_or_buf=args.output+'/simData_oom100.csv')
 
     # To save the data separately by race
     #data_A_df.to_csv(index=False, path_or_buf='simData_2decProbs_0decScores_groupA_black.csv')
