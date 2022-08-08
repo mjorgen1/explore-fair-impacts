@@ -1,7 +1,7 @@
 """Compute and Visualize outcome curves"""
 
 import numpy as np
-import solve_credit as sc
+import Liu_paper_code.solve_credit as sc
 
 
 def get_thresholds(loan_repaid_probs, pis, group_size_ratio, utils, score_change_fns, scores):
@@ -127,7 +127,7 @@ def exp_move(x, loan_repay_fn, bounds=[300, 850], move_vec=[-150, 75]):
     move_down = move_vec[0]
     move_up = move_vec[1]
     move = (1 - loan_repay_fn(x)) * move_down + loan_repay_fn(x) * move_up
-    move_to_within_bounds = max(min(x + move, bounds[1]), bounds[0])
+    move_to_within_bounds = max(min(x + float(move), bounds[1]), bounds[0])
     move_within_bounds = move_to_within_bounds - x
     return move_within_bounds
 

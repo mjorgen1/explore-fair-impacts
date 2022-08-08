@@ -468,6 +468,3 @@ def save_dict_2_csv(results_dict, fieldnames, name_csv):
             writer.writerow(row)
 
         csv_file.close()
-    return
-
-
