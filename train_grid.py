@@ -84,7 +84,7 @@ if __name__ == "__main__":
             for constraint_str in constraints.values():
 
                 print(algo_str,constraint_str)
-                mitigator, results_overall,results_black, results_white, y_pred_mitigated = add_constraint(model, constraint_str, algo_str, X_train, y_train, race_train, race_test, X_test, y_test, y_predict, sample_weight_test, dashboard_bool=False)
+                mitigator, results_overall, results_black, results_white, y_pred_mitigated = add_constraint(model, constraint_str, algo_str, X_train, y_train, race_train, race_test, X_test, y_test, y_predict, sample_weight_test, dashboard_bool=False)
 
                 if algo_str ==' GS':
                     pass

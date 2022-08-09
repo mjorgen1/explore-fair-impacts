@@ -155,7 +155,7 @@ def get_new_scores(X_test, y_predict, y_test, race_test):
     low_bound = 300
     reward = 75
     penalty = -150
-    
+
     for index, label in enumerate(y_predict):
 
         # first check for TP or FP
@@ -245,7 +245,7 @@ def add_constraint(model, constraint_str, reduction_alg, X_train, y_train, race_
     mitigator.fit(X_train, y_train, sensitive_features=race_train)
     y_pred_mitigated = mitigator.predict(X_test) #y_pred_mitigated
 
-    results_overall, results_black, results_white = evaluating_model(constraint_str,X_test,y_test, y_predict, sample_weight_test,race_test)
+    results_overall, results_black, results_white = evaluating_model(constraint_str,X_test,y_test, y_pred_mitigated, sample_weight_test,race_test)
 
     if dashboard_bool:
         pass
