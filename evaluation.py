@@ -4,21 +4,22 @@ from sklearn.metrics import classification_report, confusion_matrix, accuracy_sc
 from fairlearn.reductions import ExponentiatedGradient, GridSearch, DemographicParity, EqualizedOdds, \
     TruePositiveRateParity, FalsePositiveRateParity, ErrorRateParity, BoundedGroupLoss
 from fairlearn.metrics import *
+import numpy as np
 
 
 
-def expect_MinMax(samples_A_probs,samples_B_probs):
+def inspect_MinMax(samples_A_probs,samples_B_probs):
     max_val_A = np.max(samples_A_probs)
     min_val_A = np.min(samples_A_probs)
-    #print('the range of the Group A (Black) repay probabilities is: ', max_val_A-min_val_A)
-    #print('the min value is: ', min_val_A)
-    #print('the max value is: ', max_val_A)
+    print('the range of the Group A (Black) repay probabilities is: ', max_val_A-min_val_A)
+    print('the min value is: ', min_val_A)
+    print('the max value is: ', max_val_A)
 
     max_val_B = np.max(samples_B_probs)
     min_val_B = np.min(samples_B_probs)
-    #print('the range of the Group B (White) repay probabilities is: ', max_val_B-min_val_B)
-    #print('the min value is: ', min_val_B)
-    #print('the max value is: ', max_val_B)
+    print('the range of the Group B (White) repay probabilities is: ', max_val_B-min_val_B)
+    print('the min value is: ', min_val_B)
+    print('the max value is: ', max_val_B)
 
 
 def print_fairness_metrics(y_true, y_pred, sensitive_features, sample_weight):
@@ -195,13 +196,12 @@ def get_f1_scores(y_test, y_predict):
 def analysis(y_test, y_pred, sample_weights, print_statement):
     #print(#print_statement)
     conf_matrix = confusion_matrix(y_test, y_pred)
-    #print(conf_matrix)
     results_dict = classification_report(y_test, y_pred, output_dict=True)
     #print(classification_report(y_test, y_pred))
     f1_micro, f1_weighted, f1_binary = get_f1_scores(y_test, y_pred)
-    f1_str = str(round(f1_micro * 100, 2)) + '/' + str(round(f1_weighted * 100, 2)) + '/' + str(round(f1_binary * 100, 2))
+    #f1_str = str(round(f1_micro * 100, 2)) + '/' + str(round(f1_weighted * 100, 2)) + '/' + str(round(f1_binary * 100, 2))
     tnr, tpr, fner, fper = evaluation_outcome_rates(y_test, y_pred, sample_weights)
-    return round(results_dict['accuracy']*100, 2), f1_str, round(tnr*100, 2), round(tpr*100, 2), round(fner*100, 2), round(fper*100, 2)
+    return round(results_dict['accuracy']*100, 2), str(conf_matrix), round(f1_micro * 100, 2), round(f1_weighted * 100, 2), round(f1_binary * 100, 2), round(tnr*100, 2), round(tpr*100, 2), round(fner*100, 2), round(fper*100, 2)
 
 
 def evaluation_by_race(X_test, y_test, race_test, y_predict, sample_weight):
@@ -221,28 +221,30 @@ def evaluation_by_race(X_test, y_test, race_test, y_predict, sample_weight):
         else:
             print('You should not end up here...')
 
-    accuracy_black, f1_scores_black, tnr_black, tpr_black, fner_black, fper_black = analysis(y_test_black, y_pred_black, sw_black, 'EVALUATION FOR BLACK GROUP')
-    accuracy_white, f1_scores_white, tnr_white, tpr_white, fner_white, fper_white = analysis(y_test_white, y_pred_white, sw_white, '\nEVALUATION FOR WHITE GROUP')
+    accuracy_black, cs_m_black, f1_m_black, f1_w_black, f1_b_black, tnr_black, tpr_black, fner_black, fper_black = analysis(y_test_black, y_pred_black, sw_black, 'EVALUATION FOR BLACK GROUP')
+    accuracy_white, cs_m_white, f1_m_white, f1_w_white, f1_b_white, tnr_white, tpr_white, fner_white, fper_white = analysis(y_test_white, y_pred_white, sw_white, '\nEVALUATION FOR WHITE GROUP')
     sr_bygroup = get_selection_rates(y_test, y_predict, race_test, 1)  #sr_bygroup is a pandas series
     sr_black = round(sr_bygroup.values[0]*100, 2)
     sr_white = round(sr_bygroup.values[1]*100, 2)
     di_black, di_white = calculate_delayed_impact(X_test, y_test, y_predict, race_test)
-    results_black = [accuracy_black, f1_scores_black, sr_black, tnr_black, tpr_black, fner_black, fper_black, round(di_black, 2)]
-    results_white = [accuracy_white, f1_scores_white, sr_white, tnr_white, tpr_white, fner_white, fper_white, round(di_white, 2)]
+    results_black = [accuracy_black, cs_m_black, f1_m_black, f1_w_black, f1_b_black, sr_black, tnr_black, tpr_black, fner_black, fper_black, round(di_black, 2)]
+    results_white = [accuracy_white, cs_m_white, f1_m_white, f1_w_white, f1_b_white, sr_white, tnr_white, tpr_white, fner_white, fper_white, round(di_white, 2)]
     return results_black, results_white
 
 
 def evaluating_model(constraint_str,X_test,y_test, y_pred, sample_weight_test,race_test):
 
     overall_message = 'Evaluation of '+ constraint_str + '-constrained classifier overall:'
-    accuracy, f1_scores, tnr, tpr, fner, fper = analysis(y_test, y_pred, sample_weight_test, overall_message)
+    accuracy, cs_matrix, f1_micro, f1_weighted, f1_binary, tnr, tpr, fner, fper = analysis(y_test, y_pred, sample_weight_test, overall_message)
     sr = get_selection_rates(y_test, y_pred, race_test, 0)
     #print('\n')
-    di_black, di_white = calculate_delayed_impact(X_test, y_test, y_pred, race_test)
-    di_str = str(round(di_black, 2)) + '/' + str(round(di_white, 2))
+    di_B, di_W = calculate_delayed_impact(X_test, y_test, y_pred, race_test)
+    #di_str = str(round(di_black, 2)) + '/' + str(round(di_white, 2))
     #print('\nFairness metric evaluation of ', constraint_str, '-constrained classifier')
     dp_diff, eod_diff, eoo_dif, fpr_dif, er_dif = print_fairness_metrics(y_true=y_test, y_pred=y_pred, sensitive_features=race_test, sample_weight=sample_weight_test)
-    results_overall = [accuracy, f1_scores, round(sr*100, 2), tnr, tpr, fner, fper, di_str, round(dp_diff*100, 2), round(eod_diff*100, 2), round(eoo_dif*100, 2), round(fpr_dif*100, 2), round(er_dif*100, 2)]
+
+    results_overall = [accuracy, cs_matrix, f1_micro, f1_weighted, f1_binary, round(sr*100, 2), tnr, tpr, fner, fper, di_B,di_W, round(dp_diff*100, 2), round(eod_diff*100, 2), round(eoo_dif*100, 2), round(fpr_dif*100, 2), round(er_dif*100, 2)]
+
     #print('Evaluation of ', constraint_str, '-constrained classifier by race:')
     results_black, results_white = evaluation_by_race(X_test, y_test, race_test, y_pred, sample_weight_test)
     #print('\n')

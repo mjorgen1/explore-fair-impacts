@@ -96,7 +96,7 @@ def load_and_parse(data_dir):
 
 # Round function described below used, round(float_num, num_of_decimals)
 # Reference: https://www.guru99.com/round-function-python.html
-def get_repay_probabilities(samples, repay_probs, round_num):
+def get_repay_probabilities(samples, scores_arr, repay_probs, round_num):
     """
     Gets the rounded repay probabilities for all samples.
         Args:

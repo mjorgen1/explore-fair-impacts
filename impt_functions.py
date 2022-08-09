@@ -102,9 +102,6 @@ def get_classifier(model_name):
     elif model_name == 'lgr':
         # Reference: https://towardsdatascience.com/logistic-regression-using-python-sklearn-numpy-mnist-handwriting-recognition-matplotlib-a6b31e2b166a
         classifier = LogisticRegression()
-    elif model_name == 'svm_linear':
-        # Reference: https://www.datacamp.com/community/tutorials/svm-classification-scikit-learn-python
-        classifier = svm.SVC(kernel='linear', probability=True)
     elif model_name == 'gbt':
         # Reference: https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html
         # Note: max_depth default is 3 but tune this parameter for best performance
@@ -128,11 +125,6 @@ def get_constraint(constraint_str):
        constraint = FalsePositiveRateParity()
    elif constraint_str == 'ERP':
        constraint = ErrorRateParity()
-   elif constraint_str == 'BGL':
-       # Parameters:
-       #   loss : {SquareLoss, AbsoluteLoss}
-       #   A loss object with an `eval` method, e.g. `SquareLoss` or `AbsoluteLoss`
-       constraint = BoundedGroupLoss('SquareLoss')
    else:
        print('Error: Not a valid constraint_str')
    return constraint

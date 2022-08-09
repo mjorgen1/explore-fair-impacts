@@ -1,4 +1,5 @@
 from classification import *
+from visualizations import impact_bar_plots
 import warnings
 
 if __name__ == "__main__":
@@ -114,8 +115,8 @@ if __name__ == "__main__":
 
         # save evaluations:
         if save == True:
-            overall_fieldnames = ['Run', 'Acc', 'F1micro/F1w/F1bsr', 'SelectionRate', 'TNR rate', 'TPR rate', 'FNER', 'FPER', 'DIB/DIW', 'DP Diff', 'EO Diff', 'TPR Diff', 'FPR Diff', 'ER Diff']
-            byrace_fieldnames = ['Run', 'Acc', 'F1micro/F1w/F1bsr', 'SelectionRate', 'TNR rate', 'TPR rate', 'FNER', 'FPER', 'DI']
+            overall_fieldnames = ['Run', 'Acc', 'ConfMatrix','F1micro', 'F1weighted','F1binary', 'SelectionRate', 'TNR rate', 'TPR rate', 'FNER', 'FPER', 'DIB','DIW', 'DP Diff', 'EO Diff', 'TPR Diff', 'FPR Diff', 'ER Diff']
+            byrace_fieldnames = ['Run', 'Acc', 'ConfMatrix','F1micro', 'F1weighted','F1binary', 'SelectionRate', 'TNR rate', 'TPR rate', 'FNER', 'FPER', 'DI']
             save_dict_in_csv(overall_results_dict, overall_fieldnames, results_path+model_str+'_overall_results.csv')
             save_dict_in_csv(black_results_dict, byrace_fieldnames, results_path+model_str+'_black_results.csv')
             save_dict_in_csv(white_results_dict, byrace_fieldnames, results_path+model_str+'_white_results.csv')
@@ -128,3 +129,5 @@ if __name__ == "__main__":
                 writer.writerow(scores_names)
                 writer.writerows(columns_data_scores)
                 f.close()
+
+    impact_bar_plots(data_path = 'data/results/')
