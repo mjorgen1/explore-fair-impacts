@@ -44,6 +44,7 @@ if __name__ == "__main__":
 
     for model_str in models.values():
         print(model_str)
+        results_path = 'data/results/'
         results_path += f'{model_str}/'
 
         # Reference: https://www.datacamp.com/community/tutorials/decision-tree-classification-python
@@ -82,9 +83,10 @@ if __name__ == "__main__":
         for algo_str in reduction_algorithms.values():
             for constraint_str in constraints.values():
 
-                print(model,algo_str,constraint_str)
+                print(algo_str,constraint_str)
                 mitigator, results_overall,results_black, results_white, y_pred_mitigated = add_constraint(model, constraint_str, algo_str, X_train, y_train, race_train, race_test, X_test, y_test, y_predict, sample_weight_test, dashboard_bool=False)
-                if reduction_alg ==' GS':
+
+                if algo_str ==' GS':
                     pass
                     # We can examine the values of lambda_i chosen for us:
                     #lambda_vecs = mitigator.lambda_vecs_
@@ -95,7 +97,7 @@ if __name__ == "__main__":
                 #save scores in list
                 X_b, X_w = get_new_scores(X_test, y_pred_mitigated, y_test, race_test)
                 all_scores.extend([X_b,X_w])
-                scores_names.extend([f'{lower(algo_str)}{lower(constraint_str)}B', f'{lower(algo_str)}{lower(constraint_str)}W'])
+                scores_names.extend([f'{algo_str.lower()}{constraint_str.lower()}B', f'{algo_str.lower()}{constraint_str.lower()}W'])
 
 
                 run_key = f'{model_str} {algo_str} {constraint_str} Mitigated'

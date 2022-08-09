@@ -153,16 +153,22 @@ def get_scores(scores, round_num):  # takes in a list and returns a list
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Specify the path from where the data should be loaded and where the preprocessed datasets should be stored')
-    parser.add_argument('-input', type=str, help='Path to data folders')
-    parser.add_argument('-output', type=str,help='Path to where the preprocessed datasets should be stored')
+    parser.add_argument('--data_dir', type=str, help='Path to data folders',required=True)
+    parser.add_argument('--output_path', type=str,help='Path to where the preprocessed datasets should be stored and name of csv',required=True)
+    parser.add_argument('--file_name', type=str, help='Path to data folders',required=True)
+    parser.add_argument('--round_num', type=int,help='Identifier for rounding', default = 2)
+    parser.add_argument('--ord_of_magnitude', type=int,help='Size of the dataset', default = 100)
 
     args = parser.parse_args()
 
-
+    data_path = args.data_dir
+    result_path = args.output_path + args.file_name
+    order_of_magnitude = args.ord_of_magnitude
+    round_num = args.round_num
 
     # Make repay probabilities into percentages from decimals
     # NOTE: A is Black, B is White
-    scores_list,repay_A,repay_B,pi_A,pi_B = load_and_parse(data_dir = args.input)
+    scores_list,repay_A,repay_B,pi_A,pi_B = load_and_parse(data_dir = data_path)
     scores_arr = np.asarray(get_scores(scores=scores_list, round_num=2)) # we recommend 1 or 2 for round_num
 
     repay_A_arr = pd.Series.to_numpy(repay_A)*100
@@ -226,7 +232,7 @@ if __name__ == "__main__":
     data_all_df_shuffled['repay_indices'] = np.array(repay_indices)
 
     #Save pandas Dataframes in CSV
-    data_all_df_shuffled.to_csv(index=False, path_or_buf=args.output+'/simData_oom100.csv')
+    data_all_df_shuffled.to_csv(index=False, path_or_buf=result_path)
 
     # To save the data separately by race
     #data_A_df.to_csv(index=False, path_or_buf='simData_2decProbs_0decScores_groupA_black.csv')
