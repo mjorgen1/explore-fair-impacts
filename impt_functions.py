@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+from evaluation import evaluating_model
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
@@ -13,7 +13,7 @@ import numpy as np
 from fairlearn.reductions import ExponentiatedGradient, GridSearch, DemographicParity, EqualizedOdds, \
     TruePositiveRateParity, FalsePositiveRateParity, ErrorRateParity, BoundedGroupLoss
 from fairlearn.metrics import *
-#from raiwidgets import FairnessDashboard
+from raiwidgets import FairnessDashboard
 import matplotlib.pyplot as plt
 import csv
 
@@ -54,56 +54,6 @@ def prep_data(data, test_size, weight_index):
 
 
 
-
-
-
-def grid_search_show(model, constraint, y_predict, X_test, y_test, race_test, constraint_name, model_name, models_dict, decimal):
-    sweep_preds = [predictor.predict(X_test) for predictor in model.predictors_]
-    sweep_scores = [predictor.predict_proba(X_test)[:, 1] for predictor in model.predictors_]
-
-    sweep = [constraint(y_test, preds, sensitive_features=race_test)
-             for preds in sweep_preds]
-    accuracy_sweep = [accuracy_score(y_test, preds) for preds in sweep_preds]
-    # auc_sweep = [roc_auc_score(y_test, scores) for scores in sweep_scores]
-
-    # Select only non-dominated models (with respect to accuracy and equalized odds difference)
-    all_results = pd.DataFrame(
-        {'predictor': model.predictors_, 'accuracy': accuracy_sweep, 'disparity': sweep}
-    )
-    non_dominated = []
-    for row in all_results.itertuples():
-        accuracy_for_lower_or_eq_disparity = all_results['accuracy'][all_results['disparity'] <= row.disparity]
-        if row.accuracy >= accuracy_for_lower_or_eq_disparity.max():
-            non_dominated.append(True)
-        else:
-            non_dominated.append(False)
-
-    sweep_non_dominated = np.asarray(sweep)[non_dominated]
-    accuracy_non_dominated = np.asarray(accuracy_sweep)[non_dominated]
-    # auc_non_dominated = np.asarray(auc_sweep)[non_dominated]
-
-    # Plot DP difference vs balanced accuracy
-    plt.scatter(accuracy_non_dominated, sweep_non_dominated, label=model_name)
-    plt.scatter(accuracy_score(y_test, y_predict),
-                constraint(y_test, y_predict, sensitive_features=race_test),
-                label='Unmitigated Model')
-    plt.xlabel('Accuracy')
-    plt.ylabel(constraint_name)
-    plt.legend(bbox_to_anchor=(1.55, 1))
-    plt.show()
-
-    models_dict = update_model_perf_dict(sweep, models_dict, sweep_preds, sweep_scores, non_dominated, decimal, y_test, race_test, model_name)
-
-
-def update_model_perf_dict(sweep, models_dict, sweep_preds, sweep_scores, non_dominated, decimal, y_test, race_test, model_name):
-    # Compare GridSearch models with low values of fairness-diff with the previously constructed models
-    ##print(model_name)
-    grid_search_dict = {model_name.format(i): (sweep_preds[i], sweep_scores[i]) #{'GS_DP'.format(i): (sweep_preds[i], sweep_scores[i])
-                        for i in range(len(sweep_preds))
-                        if non_dominated[i] and sweep[i] < decimal}
-    models_dict.update(grid_search_dict)
-    #print(get_metrics_df(models_dict, y_test, race_test))
-    return models_dict
 
 
 def get_metrics_df(models_dict, y_true, group):
@@ -198,41 +148,60 @@ def get_reduction_algo(model,constraint,reduction_alg):
 
 def get_new_scores(X_test, y_predict, y_test, race_test):
     black_scores = []
+    black_type = []
     white_scores = []
-
+    white_type = []
+    up_bound = 850
+    low_bound = 300
+    reward = 75
+    penalty = -150
+    
     for index, label in enumerate(y_predict):
 
         # first check for TP or FP
         if label == 1 and y_test[index] == 1:  # if it's a TP
             if race_test[index] == 0:  # black
-                new_score = X_test[index][0] + 75
-                if new_score <= 850:
+                black_type.append('TP')
+                new_score = X_test[index][0] + reward
+                if new_score <= up_bound:
                     black_scores.append(new_score)
                 else:
-                    black_scores.append(850)
+                    black_scores.append(up_bound)
             elif race_test[index] == 1:  # white
-                new_score = X_test[index][0] + 75
-                if new_score <= 850:
+                white_type.append('TP')
+                new_score = X_test[index][0] + reward
+                if new_score <= up_bound:
                     white_scores.append(new_score)
                 else:
-                    white_scores.append(850)
+                    white_scores.append(up_bound)
         elif label == 1 and y_test[index] == 0:  # if it's a FP
             if race_test[index] == 0:  # black
-                new_score = X_test[index][0] - 150
-                if new_score < 300:
-                    black_scores.append(300)
+                black_type.append('FP')
+                new_score = X_test[index][0] + penalty
+                if new_score < low_bound:
+                    black_scores.append(low_bound)
                 else:
                     black_scores.append(new_score)
             elif race_test[index] == 1:  # white
-                new_score = X_test[index][0] - 150
-                if new_score < 300:
-                    white_scores.append(300)
+                white_type.append('FP')
+                new_score = X_test[index][0] + penalty
+                if new_score < low_bound:
+                    white_scores.append(low_bound)
                 else:
                     white_scores.append(new_score)
-        else:  # if it's a TN or FN, no change to credit score
+        elif label == 0 and y_test[index] == 0:  # TN, no change to credit score
             if race_test[index] == 0:  # black
+                black_type.append('TN')
                 black_scores.append(X_test[index][0])
             elif race_test[index] == 1:  # white
+                white_type.append('TN')
+                white_scores.append(X_test[index][0])
+        elif label == 0 and y_test[index] == 0:  # FN, no change to credit score
+            if race_test[index] == 0:  # black
+                black_type.append('FN')
+                black_scores.append(X_test[index][0])
+            elif race_test[index] == 1:  # white
+                white_type.append('FN')
                 white_scores.append(X_test[index][0])
 
     return black_scores, white_scores
@@ -274,14 +243,12 @@ def add_constraint(model, constraint_str, reduction_alg, X_train, y_train, race_
     constraint = get_constraint(constraint_str)
     mitigator = get_reduction_algo(model,constraint, reduction_alg)
     mitigator.fit(X_train, y_train, sensitive_features=race_train)
-    y_predict = mitigator.predict(X_test) #y_pred_mitigated
+    y_pred_mitigated = mitigator.predict(X_test) #y_pred_mitigated
 
     results_overall, results_black, results_white = evaluating_model(constraint_str,X_test,y_test, y_predict, sample_weight_test,race_test)
 
-
     if dashboard_bool:
         pass
-        #FairnessDashboard(sensitive_features=race_test,y_true=y_test,
-            #              y_pred={"initial model": y_predict, "mitigated model": y_pred_mitigated})
+        #FairnessDashboard(sensitive_features=race_test,y_true=y_test,y_pred={"initial model": y_predict, "mitigated model": y_pred_mitigated})
 
     return mitigator, results_overall, results_black, results_white, y_predict
