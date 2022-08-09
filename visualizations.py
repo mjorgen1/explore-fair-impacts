@@ -3,8 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, balanced_accuracy_score, roc_auc_score, f1_score
+import matplotlib.patches as mpatches
 
-def visualize_data(samples_A,samples_A_probs,samples_B,samples_B_probs):
+def visualize_data_distribution(samples_A,samples_A_probs,samples_B,samples_B_probs):
 
     samples_all_A = (samples_A, samples_A_probs)
     samples_all_B = (samples_B, samples_B_probs)
@@ -131,3 +132,36 @@ def grid_search_show(model, constraint, y_predict, X_test, y_test, race_test, co
     models_dict = update_model_perf_dict(sweep, models_dict, sweep_preds, sweep_scores, non_dominated, decimal, y_test, race_test, model_name)
 
     return models_dict
+
+
+def impact_bar_plots(data_path, b_or_w = 'black',folders= ['dt','lgr','gbt','gnb']):
+
+    dfs = {} # list for pandas dfs
+    for i,f in enumerate(folders):
+        if b_or_w == 'black':
+            path = f'{data_path}{f}/{f}_black_results.csv'
+        else:
+            path = f'{data_path}{f}/{f}_white_results.csv'
+        df = pd.read_csv(path,index_col=0)
+        df = df.reset_index()
+        dfs[i] = list(df.iloc[:,-1])
+        plt.rcParams["figure.figsize"] = [6, 4.5]
+        plt.rcParams["figure.autolayout"] = True
+
+    colors=['black','blue','blue','blue','blue','blue','cyan','cyan','cyan','cyan','cyan']
+    black_patch = mpatches.Patch(color='black', label ='No Reduction')
+    blue_patch = mpatches.Patch(color='blue', label ='Exponentiated Gradient Reduction')
+    cyan_patch = mpatches.Patch(color='cyan', label ='Grid Search Reduction')
+    idx = ['Unmitigated', 'DP', 'EO', 'TPRP', 'FPRP', 'ERP', ' DP', ' EO', ' TPRP', ' FPRP', ' ERP']
+    for i in range(len(folders)):
+        print(dfs[i])
+        fig, ax = plt.subplots()
+        ax.set_title(f'Impact for all Models for Classifier: {folders[i]} and Group {b_or_w}')
+        plt.bar(idx,dfs[i],width= 0.8, color=colors)
+        ax.set_xticks(idx)
+        ax.set_xticklabels(idx, rotation=90)
+        #plt.setp(ax.get_xticklabels(), rotation=30, horizontalalignment='right')
+        ax.set_xlabel('Models')
+        ax.set_ylabel('Impact')
+        ax.legend(handles=[black_patch,blue_patch,cyan_patch],loc = 4)
+    plt.show()
