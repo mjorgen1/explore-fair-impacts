@@ -251,4 +251,4 @@ def add_constraint(model, constraint_str, reduction_alg, X_train, y_train, race_
         pass
         #FairnessDashboard(sensitive_features=race_test,y_true=y_test,y_pred={"initial model": y_predict, "mitigated model": y_pred_mitigated})
 
-    return mitigator, results_overall, results_black, results_white, y_predict
+    return mitigator, results_overall, results_black, results_white, y_pred_mitigated

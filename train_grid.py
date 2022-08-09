@@ -12,12 +12,7 @@ if __name__ == "__main__":
     results_path = 'data/results/'
     save = True
 
-    models_dict = {}
-    overall_results_dict = {}
-    black_results_dict = {}
-    white_results_dict = {}
-    all_scores = []
-    scores_names = []
+
 
     ###BGL Misiing!!!
 
@@ -37,8 +32,7 @@ if __name__ == "__main__":
         elif race_test[index] == 1:  # white
             X_test_w.append(X_test[index][0])
 
-    all_scores.extend([X_test_b,X_test_w])
-    scores_names.extend(['testB', 'testW'])
+
 
 
 
@@ -46,6 +40,17 @@ if __name__ == "__main__":
         print(model_str)
         results_path = 'data/results/'
         results_path += f'{model_str}/'
+
+        models_dict = {}
+        overall_results_dict = {}
+        black_results_dict = {}
+        white_results_dict = {}
+        all_scores = []
+        scores_names = []
+
+        all_scores.extend([X_test_b,X_test_w])
+        scores_names.extend(['testB', 'testW'])
+
 
         # Reference: https://www.datacamp.com/community/tutorials/decision-tree-classification-python
         # train unconstrained model
