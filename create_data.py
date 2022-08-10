@@ -169,14 +169,13 @@ if __name__ == "__main__":
     # Make repay probabilities into percentages from decimals
     # NOTE: A is Black, B is White
     scores_list,repay_A,repay_B,pi_A,pi_B = load_and_parse(data_dir = data_path)
-    scores_arr = np.asarray(get_scores(scores=scores_list, round_num=2)) # we recommend 1 or 2 for round_num
+    scores_arr = np.asarray(get_scores(scores=scores_list, round_num=round_num)) # we recommend 1 or 2 for round_num
 
     repay_A_arr = pd.Series.to_numpy(repay_A)*100
     repay_B_arr = pd.Series.to_numpy(repay_B)*100
 
     # Sample data according to the pmf
     # Reference: https://www.w3schools.com/python/ref_random_choices.asp
-    order_of_magnitude = 100  #10, 50, 100
 
     num_A_samples = 120 * order_of_magnitude
     num_B_samples = 880 * order_of_magnitude
@@ -187,10 +186,10 @@ if __name__ == "__main__":
     # Calculate samples groups' probabilities and make arrays for race
 
     # A == Black == 0 (later defined as 0.0 when converting to pandas df)
-    samples_A_probs = get_repay_probabilities(samples=samples_A, repay_probs=repay_A_arr, round_num=1)
+    samples_A_probs = get_repay_probabilities(samples=samples_A,scores_arr=scores_arr, repay_probs=repay_A_arr, round_num=1)
     samples_A_race = np.zeros(num_A_samples, dtype= int)
     # B == White == 1 (later defined as 1.0 when converting to pandas df)
-    samples_B_probs = get_repay_probabilities(samples=samples_B, repay_probs=repay_B_arr, round_num=1)
+    samples_B_probs = get_repay_probabilities(samples=samples_B,scores_arr=scores_arr, repay_probs=repay_B_arr, round_num=1)
     samples_B_race = np.ones(num_B_samples, dtype= int)
 
     # Get data in dict form with score and repay prob

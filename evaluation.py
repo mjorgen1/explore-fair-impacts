@@ -146,33 +146,6 @@ def fpr_diff(y_true, y_pred, sensitive_features, sample_weight=None):
 
 def er_diff(y_true, y_pred, sensitive_features):
     result = MetricFrame(metrics=accuracy_score, y_true=y_true, y_pred=y_pred, sensitive_features=sensitive_features).difference(method='between_groups')
-
-    # Doing a check of the result variable to see if it matches up logically -- it does!!
-    '''
-    #print('Overall error rate')
-    #print(1-accuracy_score(y_true, y_pred, sample_weight=sample_weight))
-    y_test_black, y_pred_black, sw_black, y_test_white, y_pred_white, sw_white = [], [], [], [], [], []
-
-    for index, race in enumerate(sensitive_features):
-        if (race == 0):  # black
-            y_test_black.append(y_true[index])
-            y_pred_black.append(y_pred[index])
-            sw_black.append(sample_weight[index])
-        elif (race == 1):  # white
-            y_test_white.append(y_true[index])
-            y_pred_white.append(y_pred[index])
-            sw_white.append(sample_weight[index])
-
-    #print('black error rate:')
-    b_er = 1-accuracy_score(y_test_black, y_pred_black, sample_weight=sw_black)
-    #print(b_er)
-    #print('white error rate:')
-    w_er = 1-accuracy_score(y_test_white, y_pred_white, sample_weight=sw_white)
-    #print(w_er)
-    #print('error rate differene:')
-    #print(w_er-b_er)
-    #print('the metricframe error rate diff calc:')
-    '''
     return result
 
 # Resource for below: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html

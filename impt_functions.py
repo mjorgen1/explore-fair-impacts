@@ -107,13 +107,13 @@ def get_classifier(model_name):
         # Note: max_depth default is 3 but tune this parameter for best performance
         classifier = GradientBoostingClassifier(n_estimators=100)
     else:
-        print('PROBLEM: input a specified classifier above')
+         raise ValueError('unvalid classisfier {dt,gnb,lgr,gbt}')
 
     return classifier
 
 
 def get_constraint(constraint_str):
-    #set seed for consistent results with ExponentiatedGradient
+  #set seed for consistent results with ExponentiatedGradient
    np.random.seed(0)
    if constraint_str == 'DP':
        constraint = DemographicParity()
@@ -126,7 +126,7 @@ def get_constraint(constraint_str):
    elif constraint_str == 'ERP':
        constraint = ErrorRateParity()
    else:
-       print('Error: Not a valid constraint_str')
+       raise ValueError('unvalid constraint_str')
    return constraint
 
 def get_reduction_algo(model,constraint,reduction_alg):
@@ -140,9 +140,9 @@ def get_reduction_algo(model,constraint,reduction_alg):
 
 def get_new_scores(X_test, y_predict, y_test, race_test):
     black_scores = []
-    black_type = []
+    black_types = []
     white_scores = []
-    white_type = []
+    white_types = []
     up_bound = 850
     low_bound = 300
     reward = 75
@@ -153,14 +153,14 @@ def get_new_scores(X_test, y_predict, y_test, race_test):
         # first check for TP or FP
         if label == 1 and y_test[index] == 1:  # if it's a TP
             if race_test[index] == 0:  # black
-                black_type.append('TP')
+                black_types.append('TP')
                 new_score = X_test[index][0] + reward
                 if new_score <= up_bound:
                     black_scores.append(new_score)
                 else:
                     black_scores.append(up_bound)
             elif race_test[index] == 1:  # white
-                white_type.append('TP')
+                white_types.append('TP')
                 new_score = X_test[index][0] + reward
                 if new_score <= up_bound:
                     white_scores.append(new_score)
@@ -168,14 +168,14 @@ def get_new_scores(X_test, y_predict, y_test, race_test):
                     white_scores.append(up_bound)
         elif label == 1 and y_test[index] == 0:  # if it's a FP
             if race_test[index] == 0:  # black
-                black_type.append('FP')
+                black_types.append('FP')
                 new_score = X_test[index][0] + penalty
                 if new_score < low_bound:
                     black_scores.append(low_bound)
                 else:
                     black_scores.append(new_score)
             elif race_test[index] == 1:  # white
-                white_type.append('FP')
+                white_types.append('FP')
                 new_score = X_test[index][0] + penalty
                 if new_score < low_bound:
                     white_scores.append(low_bound)
@@ -183,20 +183,20 @@ def get_new_scores(X_test, y_predict, y_test, race_test):
                     white_scores.append(new_score)
         elif label == 0 and y_test[index] == 0:  # TN, no change to credit score
             if race_test[index] == 0:  # black
-                black_type.append('TN')
+                black_types.append('TN')
                 black_scores.append(X_test[index][0])
             elif race_test[index] == 1:  # white
-                white_type.append('TN')
+                white_types.append('TN')
                 white_scores.append(X_test[index][0])
-        elif label == 0 and y_test[index] == 0:  # FN, no change to credit score
+        elif label == 0 and y_test[index] == 1:  # FN, no change to credit score
             if race_test[index] == 0:  # black
-                black_type.append('FN')
+                black_types.append('FN')
                 black_scores.append(X_test[index][0])
             elif race_test[index] == 1:  # white
-                white_type.append('FN')
+                white_types.append('FN')
                 white_scores.append(X_test[index][0])
 
-    return black_scores, white_scores
+    return black_scores, white_scores, black_types, white_types
 
 # Reference: https://thispointer.com/python-dictionary-with-multiple-values-per-key/
 def add_values_in_dict(sample_dict, key, list_of_values):
@@ -228,10 +228,11 @@ def save_dict_in_csv(results_dict, fieldnames, name_csv):
         csv_file.close()
 
 
+
 ##### ONLY USD FOR NOTEBOOK #########
 def add_constraint(model, constraint_str, reduction_alg, X_train, y_train, race_train, race_test, X_test, y_test, y_predict, sample_weight_test, dashboard_bool):
     # set seed for consistent results with ExponentiatedGradient
-    np.random.seed(0)
+    #np.random.seed(0)
     constraint = get_constraint(constraint_str)
     mitigator = get_reduction_algo(model,constraint, reduction_alg)
     mitigator.fit(X_train, y_train, sensitive_features=race_train)
