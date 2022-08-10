@@ -63,12 +63,18 @@ if __name__ == "__main__":
     # split up X_test by race
     X_test_b = []
     X_test_w = []
+    y_test_b = []
+    y_test_w = []
+
 
     for index in range(len(X_test)):
         if race_test[index] == 0:  # black
             X_test_b.append(X_test[index][0])
+            y_test_b.append(y_test[index])
         elif race_test[index] == 1:  # white
             X_test_w.append(X_test[index][0])
+            y_test_w.append(y_test[index])
+
 
 
 
@@ -86,8 +92,10 @@ if __name__ == "__main__":
     all_types = []
     scores_names = []
 
-    T_test_b = ['-' for e in X_test_b]
-    T_test_w = ['-' for e in X_test_w]
+    #T_test_b = ['-' for e in X_test_b]
+    #T_test_w = ['-' for e in X_test_w]
+    T_test_b = ['TP' if e==1 else "TN" for e in y_test_b]
+    T_test_w = ['TP' if e==1 else "TN" for e in y_test_w]
 
     all_types.extend([T_test_b,T_test_w])
     all_scores.extend([X_test_b,X_test_w])
