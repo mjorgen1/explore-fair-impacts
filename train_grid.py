@@ -91,8 +91,6 @@ if __name__ == "__main__":
         scores_names = []
 
 
-        #T_test_b = ['-' for e in X_test_b]
-        #T_test_w = ['-' for e in X_test_w]
         T_test_b = ['TP' if e==1 else "TN" for e in y_test_b]
         T_test_w = ['TP' if e==1 else "TN" for e in y_test_w]
 

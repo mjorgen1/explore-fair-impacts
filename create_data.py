@@ -208,6 +208,7 @@ if __name__ == "__main__":
     # NOTE: not currently being used but could be useful at a later time
     data_all_df = pd.concat([data_A_df, data_B_df], ignore_index=True)
     #print(data_all_df)
+    np.random.seed(42)
     data_all_df_shuffled = data_all_df.sample(frac=1).reset_index(drop=True)
     #print(data_all_df_shuffled)
 
