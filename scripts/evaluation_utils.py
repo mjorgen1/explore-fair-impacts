@@ -10,6 +10,7 @@ from fairlearn.metrics import *
 
 
 
+
 def inspect_MinMax(samples_A_probs,samples_B_probs):
     max_val_A = np.max(samples_A_probs)
     min_val_A = np.min(samples_A_probs)
@@ -234,7 +235,7 @@ def impact_csvs(data_path= 'data/results/',b_or_w = 'black', folders= ['dt','gnb
     col_names_gs = []
 
     for i,f in enumerate(folders):
-        if b_or_w == 'black':
+        if b_or_w == 'Black':
             path = f'{data_path}{f}/{f}_black_results.csv'
         else:
             path = f'{data_path}{f}/{f}_white_results.csv'
@@ -286,9 +287,8 @@ def types_ratios_csv(data_path,folders= ['dt','lgr','gbt','gnb']):
         df = df.groupby('ID').value_counts(normalize=True)
         df = df.reset_index()
         df = df.rename(columns= {0:'Ratio'})
-
-
+        #df = df['Ratio'].round(decimals = 3)
         df = df.pivot(index='Value', columns='ID')['Ratio']
-        df = df.round(decimals = 3)
+
         print('Classifier: ',f,'\n DataFrame: \n',df)
         df.to_csv(f'{data_path}{f}/{f}_typeRatios.csv')
