@@ -1,6 +1,6 @@
 
 data_dir: 'data/raw/'
-result_path: 'data/final/balanced_set_testYaml.csv'
+result_path: 'data/final/balanced_set_100.csv'
 order_of_magnitude: 100000
 group_size_ratio:
   - 0.5

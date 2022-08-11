@@ -1,6 +1,3 @@
-
-from evaluation_utils import evaluating_model
-
 import pandas as pd
 import numpy as np
 from itertools import zip_longest
@@ -24,6 +21,7 @@ from fairlearn.reductions import ExponentiatedGradient, GridSearch, DemographicP
 from fairlearn.metrics import *
 from raiwidgets import FairnessDashboard
 
+from scripts.evaluation_utils import evaluating_model
 
 def load_args(file):
     """ Load args and run some basic checks.

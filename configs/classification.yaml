@@ -1,13 +1,13 @@
 
-data_path: 'data/final/balanced_set_testYaml.csv'
-results_dir: 'data/results/test_yaml/'
+data_path: 'data/final/balanced_set_100.csv'
+results_dir: 'data/results/test_1_balanced/'
 weight_idx: 1
 testset_size: 0.3
 models:
   Decision Tree: 'dt'
-  #Gaussian Naive Bayes: 'dnb'
-  #Logistic Regression: 'lgr'
-  #Gradient_Boosted_Trees: 'gbt'
+  Gaussian Naive Bayes: 'dnb'
+  Logistic Regression: 'lgr'
+  Gradient_Boosted_Trees: 'gbt'
 constraints:
   Demografic Parity: 'DP'
   Equalized Odds: 'EO'
