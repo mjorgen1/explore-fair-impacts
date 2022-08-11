@@ -1,49 +1,12 @@
-from impt_functions import *
-from evaluation import *
-from visualizations import impact_bar_plots
-import warnings
-import argparse
-
-import csv
-from itertools import zip_longest
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib import colors
-
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.naive_bayes import GaussianNB
-from sklearn.linear_model import LogisticRegression
-from sklearn import svm
-from sklearn.ensemble import GradientBoostingClassifier
-from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, f1_score
-
-from fairlearn.reductions import ExponentiatedGradient, GridSearch, DemographicParity, EqualizedOdds, \
-    TruePositiveRateParity, FalsePositiveRateParity, ErrorRateParity, BoundedGroupLoss
-from fairlearn.metrics import *
-from raiwidgets import FairnessDashboard
 
 
+def classify(data_path,results_dir,weight_idx,testset_size,models,constraints,reduction_algorithms,save):
 if __name__ == "__main__":
     warnings.filterwarnings('ignore', category=FutureWarning)
 
-    parser = argparse.ArgumentParser(description='Specify the path from where the data should be loaded and where the preprocessed datasets should be stored')
-    parser.add_argument('--data_path', type=str, help='Path to the dataset',required=True)
-    parser.add_argument('--output_path', type=str,help='Path to where the results should be stored and name of csv',required=True)
-    parser.add_argument('--weight_idx', type=float,help='Identifier for rounding', default = 1)
-    parser.add_argument('--testset_size', type=float,help='Size of the dataset', default = 0.3)
-
-    args = parser.parse_args()
-
-    data_path = args.data_path
-    result_path = args.output_path
-
-    weight_idx = args.weight_idx
-    test_size = args.testset_size
-
     models = {'Decision Tree': 'dt', 'Gaussian Naive Bayes':'gnb','Logistic Regression': 'lgr', 'Gradient_Boosted_Trees': 'gbt'}
     constraints = {'Demografic Parity': 'DP', 'Equalized Odds': 'EO', 'Equality of Opportunity': 'TPRP', 'False Positive Rate Parity': 'FPRP', 'Error Rate Parity': 'ERP'}
-    reduction_algorithms = {'Exponential Gradient':'EG','Grid Search':'GS'}
+    reduction_algorithms = {}
 
     save = True
 
@@ -54,7 +17,7 @@ if __name__ == "__main__":
     # Load and Prepare data
     data = get_data(data_path)
 
-    X_train, X_test, y_train, y_test, race_train, race_test, sample_weight_train, sample_weight_test = prep_data(data=data, test_size=test_size, weight_index=weight_idx)
+    X_train, X_test, y_train, y_test, race_train, race_test, sample_weight_train, sample_weight_test = prep_data(data=data, test_size=testset_size, weight_index=weight_idx)
 
 
     # split up X_test by race
@@ -73,14 +36,11 @@ if __name__ == "__main__":
             y_test_w.append(y_test[index])
 
 
-
-
-
-
     for model_str in models.values():
         print(model_str)
-        results_path = args.output_path
+        results_path = results_dir
         results_path += f'{model_str}/'
+        os.makedirs(result_path, exist_ok=True)
 
         models_dict = {}
         overall_results_dict = {}

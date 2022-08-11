@@ -1,0 +1,20 @@
+
+data_path: 'data/final/balanced_set_testYaml.csv'
+results_dir: 'data/results/test_yaml/'
+weight_idx: 1
+testset_size: 0.3
+models:
+  Decision Tree: 'dt'
+  #Gaussian Naive Bayes: 'dnb'
+  #Logistic Regression: 'lgr'
+  #Gradient_Boosted_Trees: 'gbt'
+constraints:
+  Demografic Parity: 'DP'
+  Equalized Odds: 'EO'
+  Equality of Opportunity: 'TPRP'
+  False Positive Rate Parity: 'FPRP'
+  Error Rate Parity: 'ERP'
+reduction_algorithms:
+  Exponential Gradient: 'EG'
+  Grid Search: 'GS'
+save: True

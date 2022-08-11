@@ -3,6 +3,6 @@ import os
 import sys
 if __name__ == "__main__":
     print("prepare data")
-    os.system(f'python create_data.py --data_dir data/raw/ --output_path data/final/ --file_name 100WSeed4.csv')
-    print("model grid classification")
-    os.system(f'python train_grid.py --data_path data/final/100WSeed2.csv --output_path data/results/test_5/ --weight_idx 1 --testset_size 0.3')
+    os.system(f'python create_data.py')
+    print("model classification")
+    os.system(f'python classification.py')

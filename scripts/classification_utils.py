@@ -1,22 +1,45 @@
-#!/usr/bin/env python
-from evaluation import evaluating_model
+
+from evaluation_utils import evaluating_model
+
+import pandas as pd
+import numpy as np
+from itertools import zip_longest
+import csv
+import os
+import warnings
+import yaml
+from yaml.loader import SafeLoader
+
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LogisticRegression
-from sklearn import svm
+from sklearn.model_selection import cross_val_score
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, balanced_accuracy_score, roc_auc_score, f1_score
-import pandas as pd
-import numpy as np
+
 from fairlearn.reductions import ExponentiatedGradient, GridSearch, DemographicParity, EqualizedOdds, \
     TruePositiveRateParity, FalsePositiveRateParity, ErrorRateParity, BoundedGroupLoss
 from fairlearn.metrics import *
 from raiwidgets import FairnessDashboard
-import matplotlib.pyplot as plt
-import csv
 
+
+def load_args(file):
+    """ Load args and run some basic checks.
+    Args:
+        file <str> =
+
+
+    """
+    with open(file, "r") as stream:
+        try:
+            data = yaml.load(stream, Loader=SafeLoader)
+            print('Arguments: ',data)
+        except yaml.YAMLError as exc:
+            print(exc)
+
+    return data
 
 
 def get_data(file):
@@ -245,3 +268,138 @@ def add_constraint(model, constraint_str, reduction_alg, X_train, y_train, race_
         #FairnessDashboard(sensitive_features=race_test,y_true=y_test,y_pred={"initial model": y_predict, "mitigated model": y_pred_mitigated})
 
     return mitigator, results_overall, results_black, results_white, y_pred_mitigated
+
+
+def classify(data_path,results_dir,weight_idx,testset_size,models,constraints,reduction_algorithms,save):
+
+    warnings.filterwarnings('ignore', category=FutureWarning)
+
+    # Load and Prepare data
+    data = get_data(data_path)
+
+    X_train, X_test, y_train, y_test, race_train, race_test, sample_weight_train, sample_weight_test = prep_data(data=data, test_size=testset_size, weight_index=weight_idx)
+
+
+    # split up X_test by race
+    X_test_b = []
+    X_test_w = []
+    y_test_b = []
+    y_test_w = []
+
+
+    for index in range(len(X_test)):
+        if race_test[index] == 0:  # black
+            X_test_b.append(X_test[index][0])
+            y_test_b.append(y_test[index])
+        elif race_test[index] == 1:  # white
+            X_test_w.append(X_test[index][0])
+            y_test_w.append(y_test[index])
+
+
+    for model_str in models.values():
+        print(model_str)
+        results_path = results_dir
+        results_path += f'{model_str}/'
+        os.makedirs(results_path, exist_ok=True)
+
+        models_dict = {}
+        overall_results_dict = {}
+        black_results_dict = {}
+        white_results_dict = {}
+        all_scores = []
+        all_types = []
+        scores_names = []
+
+
+        T_test_b = ['TP' if e==1 else "TN" for e in y_test_b]
+        T_test_w = ['TP' if e==1 else "TN" for e in y_test_w]
+
+        all_types.extend([T_test_b,T_test_w])
+        all_scores.extend([X_test_b,X_test_w])
+        scores_names.extend(['testB', 'testW'])
+
+
+        # Reference: https://www.datacamp.com/community/tutorials/decision-tree-classification-python
+        # train unconstrained model
+        classifier = get_classifier(model_str)
+        #np.random.seed(0)
+        model = classifier.fit(X_train,y_train, sample_weight_train)
+        y_predict = model.predict(X_test)
+
+        # Scores on test set
+        test_scores = model.predict_proba(X_test)[:, 1]
+        models_dict = {"Unmitigated": (y_predict, test_scores)}
+
+        # given predictions+outcomes, I'll need to do the same
+        x = data[['score', 'race']].values
+        y = data['repay_indices'].values
+        scores = cross_val_score(model, x, y, cv=5, scoring='f1_weighted')
+
+
+        #save scores and types (TP,FP,TN,FN) in list
+        X_b, X_w, T_b, T_w = get_new_scores(X_test, y_predict, y_test, race_test)
+        all_types.extend([T_b,T_w])
+        all_scores.extend([X_b,X_w])
+        scores_names.extend(['unmitB', 'unmitW'])
+
+        # evaluate model
+        constraint_str = 'Un-'
+        results_overall, results_black, results_white = evaluating_model(constraint_str,X_test,y_test, y_predict, sample_weight_test,race_test)
+
+        # adding results to dict
+        run_key = f'{model_str} Unmitigated'
+        overall_results_dict = add_values_in_dict(overall_results_dict, run_key, results_overall)
+        black_results_dict = add_values_in_dict(black_results_dict, run_key, results_black)
+        white_results_dict = add_values_in_dict(white_results_dict, run_key, results_white)
+
+        # train all constrained model for this model type
+        for algo_str in reduction_algorithms.values():
+            for constraint_str in constraints.values():
+
+                print(algo_str,constraint_str)
+                mitigator, results_overall, results_black, results_white, y_pred_mitigated = add_constraint(model, constraint_str, algo_str, X_train, y_train, race_train, race_test, X_test, y_test, y_predict, sample_weight_test, dashboard_bool=False)
+
+                if algo_str ==' GS':
+                    pass
+                    # We can examine the values of lambda_i chosen for us:
+                    #lambda_vecs = mitigator.lambda_vecs_
+                    #print(lambda_vecs[0])
+                    #models_dict = grid_search_show(mitigator, demographic_parity_difference, y_predict, X_test, y_test, race_test, 'DemParityDifference','GS DPD', models_dict, 0.3)
+                    #models_dict.pop('GS DPD')
+
+                #save scores in list
+                X_b, X_w, T_b, T_w = get_new_scores(X_test, y_pred_mitigated, y_test, race_test)
+                all_types.extend([T_b,T_w])
+                all_scores.extend([X_b,X_w])
+                scores_names.extend([f'{algo_str.lower()}{constraint_str.lower()}B', f'{algo_str.lower()}{constraint_str.lower()}W'])
+
+
+                run_key = f'{model_str} {algo_str} {constraint_str} Mitigated'
+                overall_results_dict = add_values_in_dict(overall_results_dict, run_key, results_overall)
+                black_results_dict = add_values_in_dict(black_results_dict, run_key, results_black)
+                white_results_dict = add_values_in_dict(white_results_dict, run_key, results_white)
+
+        #print(overall_results_dict)
+
+        # save evaluations:
+        if save == True:
+            overall_fieldnames = ['Run', 'Acc', 'ConfMatrix','F1micro', 'F1weighted','F1binary', 'SelectionRate', 'TNR rate', 'TPR rate', 'FNER', 'FPER', 'DIB','DIW', 'DP Diff', 'EO Diff', 'TPR Diff', 'FPR Diff', 'ER Diff']
+            byrace_fieldnames = ['Run', 'Acc', 'ConfMatrix','F1micro', 'F1weighted','F1binary', 'SelectionRate', 'TNR rate', 'TPR rate', 'FNER', 'FPER', 'DI']
+            save_dict_in_csv(overall_results_dict, overall_fieldnames, results_path+model_str+'_overall_results.csv')
+            save_dict_in_csv(black_results_dict, byrace_fieldnames, results_path+model_str+'_black_results.csv')
+            save_dict_in_csv(white_results_dict, byrace_fieldnames, results_path+model_str+'_white_results.csv')
+
+            # Save overall score results
+            columns_data_scores = zip_longest(*all_scores)
+            columns_data_types = zip_longest(*all_types)
+
+            with open(results_path+model_str+'_all_scores.csv',mode='w') as f:
+                writer = csv.writer(f)
+                writer.writerow(scores_names)
+                writer.writerows(columns_data_scores)
+                f.close()
+            with open(results_path+model_str+'_all_types.csv',mode='w') as f:
+                writer = csv.writer(f)
+                writer.writerow(scores_names)
+                writer.writerows(columns_data_types)
+                f.close()
