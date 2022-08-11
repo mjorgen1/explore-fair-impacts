@@ -134,34 +134,42 @@ def grid_search_show(model, constraint, y_predict, X_test, y_test, race_test, co
     return models_dict
 
 
-def impact_bar_plots(data_path, b_or_w = 'black',folders= ['dt','lgr','gbt','gnb']):
+def impact_bar_plots(data_path, b_or_w = 'Black',folders= ['dt','lgr','gbt','gnb']):
 
     dfs = {} # list for pandas dfs
     for i,f in enumerate(folders):
-        if b_or_w == 'black':
+        if b_or_w == 'Black':
             path = f'{data_path}{f}/{f}_black_results.csv'
-        else:
+        elif b_or_w == 'White':
             path = f'{data_path}{f}/{f}_white_results.csv'
         df = pd.read_csv(path,index_col=0)
         df = df.reset_index()
         dfs[i] = list(df.iloc[:,-1])
-        plt.rcParams["figure.figsize"] = [6, 4.5]
+        plt.rcParams["figure.figsize"] = [8, 7]
         plt.rcParams["figure.autolayout"] = True
+        plt.rcParams["font.size"] = 11
 
-    colors=['black','blue','blue','blue','blue','blue','cyan','cyan','cyan','cyan','cyan']
-    black_patch = mpatches.Patch(color='black', label ='No Reduction')
-    blue_patch = mpatches.Patch(color='blue', label ='Exponentiated Gradient Reduction')
-    cyan_patch = mpatches.Patch(color='cyan', label ='Grid Search Reduction')
+    colors=['#FFAE49','#024B7A','#024B7A','#024B7A','#024B7A','#024B7A','#44B7C2','#44B7C2','#44B7C2','#44B7C2','#44B7C2']
+    colors_text=['black','white','white','white','white','white','black','black','black','black','black']
+    black_patch = mpatches.Patch(color='#FFAE49', label ='No Reduction')
+    blue_patch = mpatches.Patch(color='#024B7A', label ='Expo. Gradient Reduction')
+    cyan_patch = mpatches.Patch(color='#44B7C2', label ='Grid Search Reduction')
     idx = ['Unmitigated', 'DP', 'EO', 'TPRP', 'FPRP', 'ERP', ' DP', ' EO', ' TPRP', ' FPRP', ' ERP']
     for i in range(len(folders)):
-        print(dfs[i])
         fig, ax = plt.subplots()
-        ax.set_title(f'Impact for all Models for Classifier: {folders[i]} and Group {b_or_w}')
-        plt.bar(idx,dfs[i],width= 0.8, color=colors)
+        ax.set_title(f'Delayed Impact for all Models for Classifier: {folders[i]} / Group: {b_or_w}\n\n')
+        plt.bar(idx,dfs[i],width= 0.9, color=colors)
+
+        # y value on top of each bar
+        for j, v in enumerate(dfs[i]):
+            ax.text(j, v, v, ha = 'center', color = 'black', fontsize= 10, bbox = dict(facecolor= '#F9F9F9', edgecolor= colors[j], alpha=0.9, pad=0.5))
+
+        # labels
         ax.set_xticks(idx)
         ax.set_xticklabels(idx, rotation=90)
-        #plt.setp(ax.get_xticklabels(), rotation=30, horizontalalignment='right')
-        ax.set_xlabel('Models')
+        ax.set_xlabel('Constraint')
         ax.set_ylabel('Impact')
-        ax.legend(handles=[black_patch,blue_patch,cyan_patch],loc = 4)
+
+        #legend
+        ax.legend(handles=[black_patch,blue_patch,cyan_patch], bbox_to_anchor=(0,1.02,1,0.2), loc="lower left",mode="expand", borderaxespad=0, ncol=3)
     plt.show()
