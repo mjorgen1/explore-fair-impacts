@@ -134,6 +134,9 @@ def grid_search_show(model, constraint, y_predict, X_test, y_test, race_test, co
 
     return models_dict
 
+def heatplot(df):
+    print(df)
+    sns.heatmap(df,cmap='mako')
 
 def impact_bar_plots(data_path, b_or_w = 'Black',folders= ['dt','lgr','gbt','gnb']):
 
