@@ -12,11 +12,12 @@ import Liu_paper_code.distribution_to_loans_outcomes as dlo
 def load_args(file):
     """ Load args and run some basic checks.
     Args:
-        file <str> =
-
-
+        - file <str>: full path to .yaml config file
+    Returns:
+        - data <dict>: dictionary with all args from file
     """
     with open(file, "r") as stream:
+
         try:
             data = yaml.load(stream, Loader=SafeLoader)
             print('Arguments: ',data)
@@ -25,10 +26,10 @@ def load_args(file):
 
     return data
 
-# to populate group distributions
+
 def get_pmf(cdf):
     """
-    Calculation of the probability mass function.
+    Calculation of the probability mass function. (to populate group distributions)
 
     Code from Lydia's delayedimpact repository FICO-figures.ipynb:
     https://github.com/lydiatliu/delayedimpact/tree/master/notebooks
@@ -131,7 +132,7 @@ def get_repay_probabilities(samples, scores_arr, repay_probs, round_num):
 
 def get_scores(scores, round_num):  # takes in a list and returns a list
     """
-    ---
+    Returns rounded scores.
         Args:
             - scores <list>:
             - round_num <int> {0,1,2}:
@@ -154,8 +155,19 @@ def get_scores(scores, round_num):  # takes in a list and returns a list
 
 
 
-def load_parse_and_save(data_dir, result_path, order_of_magnitude, group_size_ratio, round_num_scores, round_num_repay_probs,shuffle_seed):
+def load_parse_and_save(data_dir, result_path, order_of_magnitude, group_size_ratio, round_num_scores, round_num_repay_probs,shuffle_seed = None):
+    """
+    Complete pipeline of loading, parsing and saving of the created dataset.
+        Args:
+            - data_dir <str>: Path to the directorz of the raw data
+            - results_path <str>: Path for the data file, including its file_name
+            - order_of_magnitude <int>: total size of the dataset
+            - group_size_ratio <list>: contains 2 floats between 0 and 1 (sum = 1), representing the ratio of black to white samples generated
+            - round_num_scores <list> {0,1,2}: look at def:get_scores
+            - round_num_repay_probs <int> {0,1,2}: look at def:get_repay_probabilities
+            - shuffle_seed <int>: Seed to be able to reproduce datasets
 
+    """
 
     # Make repay probabilities into percentages from decimals
     # NOTE: A is Black, B is White
