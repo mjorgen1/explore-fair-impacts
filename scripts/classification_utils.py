@@ -46,8 +46,21 @@ def get_data(file):
     #print(data)
     return data
 
+def split_with_ratio(x_data, y_data,total_num_samples, race_ratio):
+    idx_0 = np.where(x_data[:, 1] == 0)[0]
+    idx_1 = np.where(x_data[:, 1] == 1)[0]
+    num_samples_0 = int(total_num_samples * race_ratio[0])
+    num_samples_1 = int(total_num_samples * race_ratio[1])
+    if len(idx_0) >= num_samples_0 and len(idx_1) >= num_samples_1:
+        idx_0 = idx_0[:num_samples_0]
+        idx_1 = idx_1[:num_samples_1]
+        idx = sorted(np.concatenate((idx_0,idx_1)))
+    else:
+        raise Exception(f'You have not enough samples in general or for one race ({len(idx_0)},{len(idx_1)}) for the chosen set composition ({num_samples_0},{num_samples_1}).')
 
-def prep_data(data, test_size, weight_index):
+    return x_data[idx,:], y_data[idx]
+
+def prep_data(data, test_size, total_num_samples_in_sets, weight_index):
     # might need to include standardscaler here
 
     x = data[['score', 'race']].values
@@ -57,10 +70,14 @@ def prep_data(data, test_size, weight_index):
     #print('Here are the x values: ', x, '\n')
     #print('Here are the y values: ', y)
 
+
+    X_train, y_train = split_with_ratio(X_train, y_train, total_num_samples_in_sets[0], [0.5,0.5])
+
+    X_test, y_test = split_with_ratio(X_test, y_test, total_num_samples_in_sets[1], [0.5,0.5])
+
     # collect our sensitive attribute
     race_train = X_train[:, 1]
     race_test = X_test[:, 1]
-
     # weight_index: 1 means all equal weights
     if weight_index:
         #print('Sample weights are all equal.')
@@ -268,14 +285,14 @@ def add_constraint(model, constraint_str, reduction_alg, X_train, y_train, race_
     return mitigator, results_overall, results_black, results_white, y_pred_mitigated
 
 
-def classify(data_path,results_dir,weight_idx,testset_size,models,constraints,reduction_algorithms,save):
+def classify(data_path,results_dir,weight_idx,testset_size,total_num_samples_in_sets,models,constraints,reduction_algorithms,save):
 
     warnings.filterwarnings('ignore', category=FutureWarning)
 
     # Load and Prepare data
     data = get_data(data_path)
 
-    X_train, X_test, y_train, y_test, race_train, race_test, sample_weight_train, sample_weight_test = prep_data(data=data, test_size=testset_size, weight_index=weight_idx)
+    X_train, X_test, y_train, y_test, race_train, race_test, sample_weight_train, sample_weight_test = prep_data(data=data, test_size=testset_size,total_num_samples_in_sets=total_num_samples_in_sets, weight_index=weight_idx)
 
 
     # split up X_test by race
@@ -362,7 +379,7 @@ def classify(data_path,results_dir,weight_idx,testset_size,models,constraints,re
                     # We can examine the values of lambda_i chosen for us:
                     #lambda_vecs = mitigator.lambda_vecs_
                     #print(lambda_vecs[0])
-                    #models_dict = grid_search_show(mitigator, demographic_parity_difference, y_predict, X_test, y_test, race_test, 'DemParityDifference','GS DPD', models_dict, 0.3)
+                    #models_dict = grid_search_show(mitigator, demographic_parity_difference, y_pred_mitigated, X_test, y_test, race_test, 'DemParityDifference','GS DPD', models_dict, 0.3)
                     #models_dict.pop('GS DPD')
 
                 #save scores in list

@@ -1,8 +1,11 @@
 
 data_path: 'data/final/balanced_set_100_42.csv'
-results_dir: 'data/results/test_1_balanced/'
+results_dir: 'data/results/test_2_balanced/'
 weight_idx: 1
 testset_size: 0.3
+total_num_samples_in_sets:
+  - 64000
+  - 26000
 models:
   Decision Tree: 'dt'
   Gaussian Naive Bayes: 'gnb'
