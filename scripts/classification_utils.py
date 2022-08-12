@@ -46,21 +46,47 @@ def get_data(file):
     #print(data)
     return data
 
-def split_with_ratio(x_data, y_data,total_num_samples, race_ratio):
+def adjust_demographic_ratio(x_data, y_data, race_ratio):
+    set_size = len(y_data)
+    num_samples_0 = int(set_size * race_ratio[0])
+    num_samples_1 = int(set_size * race_ratio[1])
+
     idx_0 = np.where(x_data[:, 1] == 0)[0]
     idx_1 = np.where(x_data[:, 1] == 1)[0]
-    num_samples_0 = int(total_num_samples * race_ratio[0])
-    num_samples_1 = int(total_num_samples * race_ratio[1])
-    if len(idx_0) >= num_samples_0 and len(idx_1) >= num_samples_1:
-        idx_0 = idx_0[:num_samples_0]
-        idx_1 = idx_1[:num_samples_1]
-        idx = sorted(np.concatenate((idx_0,idx_1)))
-    else:
-        raise Exception(f'You have not enough samples in general or for one race ({len(idx_0)},{len(idx_1)}) for the chosen set composition ({num_samples_0},{num_samples_1}).')
+
+    if len(idx_0) < num_samples_0:
+        num_samples_0 = len(idx_0)
+        num_samples_1 = int(num_samples_0/race_ratio[0] * race_ratio[1])
+    elif len(idx_1) < num_samples_1:
+        num_samples_1 = len(idx_1)
+        num_samples_0 = int(num_samples_1/race_ratio[1] * race_ratio[0])
+
+    idx_0 = idx_0[:num_samples_0]
+    idx_1 = idx_1[:num_samples_1]
+    idx = sorted(np.concatenate((idx_0,idx_1)))
 
     return x_data[idx,:], y_data[idx]
 
-def prep_data(data, test_size, total_num_samples_in_sets, weight_index):
+def balance_label_ratio(x_data, y_data):
+    set_size = len(y_data)
+
+    idx_0N = np.where((x_data[:, 1] == 0) & (y_data == 0))[0]
+    idx_1N = np.where((x_data[:, 1] == 1) & (y_data == 0))[0]
+    idx_0P = np.where((x_data[:, 1] == 0) & (y_data == 1))[0]
+    idx_1P = np.where((x_data[:, 1] == 1) & (y_data == 1))[0]
+    num_0 = min(len(idx_0N),len(idx_0P))
+    num_1 = min(len(idx_1N),len(idx_1P))
+
+
+    idx_0N = idx_0N[:num_0]
+    idx_1N = idx_1N[:num_1]
+    idx_0P = idx_0P[:num_0]
+    idx_1P = idx_1P[:num_1]
+    idx = sorted(np.concatenate((idx_0N,idx_0P,idx_1N,idx_1P)))
+
+    return x_data[idx,:], y_data[idx]
+
+def prep_data(data, test_size, demo_ratio, weight_index):
     # might need to include standardscaler here
 
     x = data[['score', 'race']].values
@@ -71,10 +97,14 @@ def prep_data(data, test_size, total_num_samples_in_sets, weight_index):
     #print('Here are the y values: ', y)
 
 
-    X_train, y_train = split_with_ratio(X_train, y_train, total_num_samples_in_sets[0], [0.5,0.5])
+    X_train, y_train = adjust_demographic_ratio(X_train, y_train, demo_ratio)
 
-    X_test, y_test = split_with_ratio(X_test, y_test, total_num_samples_in_sets[1], [0.5,0.5])
+    X_test, y_test = adjust_demographic_ratio(X_test, y_test, demo_ratio)
+    print('Training set:', len(y_train))
+    print('Testing set:', len(y_test))
 
+    X_test,y_test = balance_label_ratio(X_test, y_test)
+    print('Testing set:', len(y_test))
     # collect our sensitive attribute
     race_train = X_train[:, 1]
     race_test = X_test[:, 1]
@@ -285,14 +315,14 @@ def add_constraint(model, constraint_str, reduction_alg, X_train, y_train, race_
     return mitigator, results_overall, results_black, results_white, y_pred_mitigated
 
 
-def classify(data_path,results_dir,weight_idx,testset_size,total_num_samples_in_sets,models,constraints,reduction_algorithms,save):
+def classify(data_path,results_dir,weight_idx,testset_size,demo_ratio,models,constraints,reduction_algorithms,save):
 
     warnings.filterwarnings('ignore', category=FutureWarning)
 
     # Load and Prepare data
     data = get_data(data_path)
 
-    X_train, X_test, y_train, y_test, race_train, race_test, sample_weight_train, sample_weight_test = prep_data(data=data, test_size=testset_size,total_num_samples_in_sets=total_num_samples_in_sets, weight_index=weight_idx)
+    X_train, X_test, y_train, y_test, race_train, race_test, sample_weight_train, sample_weight_test = prep_data(data=data, test_size=testset_size,demo_ratio=demo_ratio, weight_index=weight_idx)
 
 
     # split up X_test by race
