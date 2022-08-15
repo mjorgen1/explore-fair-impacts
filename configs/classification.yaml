@@ -4,11 +4,11 @@ results_dir: 'data/results/testset_balanced_200_1/'
 weight_idx: 1
 testset_size: 0.3
 demo_ratio:
-  - 0.5
-  - 0.5
+  - 0.5 #Black
+  - 0.5 #White
 label_ratio:
-  - 0.5
-  - 0.5
+  - 0.5 #False
+  - 0.5 #True
 models:
   Decision Tree: 'dt'
   Gaussian Naive Bayes: 'gnb'
