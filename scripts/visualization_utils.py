@@ -6,7 +6,7 @@ from sklearn.metrics import classification_report, confusion_matrix, accuracy_sc
 import matplotlib.patches as mpatches
 from scipy import stats
 
-def visualize_data_distribution(samples_A,samples_A_probs,samples_B,samples_B_probs):
+def visualize_data_distribution(path,samples_A,samples_A_probs,samples_B,samples_B_probs):
 
     samples_all_A = (samples_A, samples_A_probs)
     samples_all_B = (samples_B, samples_B_probs)
@@ -28,19 +28,20 @@ def visualize_data_distribution(samples_A,samples_A_probs,samples_B,samples_B_pr
     plt.legend(loc=2)
     plt.xlabel('Credit Score')
     plt.ylabel('Repay Probability')
+    plt.savefig(f'{path}repay_by_score.png')
     plt.show()
 
 
-def visual_scores_by_race(data):
+def visual_scores_by_race(path,fname,x,y):
     # make histogram of credit scores by race
     fig, axs = plt.subplots(1, 2, sharey=True, tight_layout=True)
 
-    fig.suptitle('Histogram Credit Score Distribution')
+    fig.suptitle(f'Histogram Credit Score Distribution {fname} data')
     plt.xlabel('Credit Score')
     #plt.ylabel('No. of Individuals')
 
-    black_credit_dist = data['score'].loc[data['race']==0]
-    white_credit_dist = data['score'].loc[data['race']==1]
+    black_credit_dist = x[np.where(x[:, 1] == 0)[0]][:,0]
+    white_credit_dist = x[np.where(x[:, 1] == 1)[0]][:,0]
 
     n_bins = 50
     # We can set the number of bins with the *bins* keyword argument.
@@ -50,24 +51,19 @@ def visual_scores_by_race(data):
     axs[0].set_ylabel('No. of Individuals')
     axs[1].set_title('White Group')
     axs[1].hist(white_credit_dist, bins=n_bins)
+    plt.savefig(f'{fname}_demo_distr.png')
+    plt.show()
 
 
 
-def visual_repay_dist(data):
+def visual_repay_dist(path,fname,x,y):
     fig, axs = plt.subplots(1, 2, sharey=True, tight_layout=True)
 
-    fig.suptitle('Histogram of Repay Distribution')
+    fig.suptitle(f'Histogram of Repay Distribution for {fname} data')
     plt.xlabel('Repay Label')
 
-    black_label_dist = data['repay_indices'].loc[data['race']==0]
-    white_label_dist = data['repay_indices'].loc[data['race']==1]
-
-    #print(black_label_dist)
-    #print(white_label_dist)
-
-    # maybe see if the label is an int or a float
-
-    # default: 0, repay: 1
+    black_label_dist = y[np.where(x[:, 1] == 0)[0]]
+    white_label_dist = y[np.where(x[:, 1] == 1)[0]]
 
     n_bins = 2
     # We can set the number of bins with the *bins* keyword argument.
@@ -84,6 +80,8 @@ def visual_repay_dist(data):
     axs[1].set_xticklabels(['Default','Repay'])
     axs[1].hist(white_label_dist, bins=n_bins)
     axs[1].set_title('White Group')
+    plt.savefig(f'{fname}_label_distr.png')
+    plt.show()
 
 
 def update_model_perf_dict(sweep, models_dict, sweep_preds, sweep_scores, non_dominated, decimal, y_test, race_test, model_name):
@@ -176,4 +174,5 @@ def impact_bar_plots(data_path, b_or_w = 'Black',folders= ['dt','lgr','gbt','gnb
 
         #legend
         ax.legend(handles=[black_patch,blue_patch,cyan_patch], bbox_to_anchor=(0,1.02,1,0.2), loc="lower left",mode="expand", borderaxespad=0, ncol=3)
+        plt.savefig(f'{folders[i]}_{b_or_w}_DI.png')
     plt.show()

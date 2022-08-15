@@ -1,16 +1,19 @@
 
-data_path: 'data/final/unbalanced_set_100_42.csv'
-results_dir: 'data/results/test_notbalanced_and_balanced/'
+data_path: 'data/final/balanced_set_200_42.csv'
+results_dir: 'data/results/testset_balanced_200_1/'
 weight_idx: 1
 testset_size: 0.3
 demo_ratio:
-  - 0.12
-  - 0.88
+  - 0.5
+  - 0.5
+label_ratio:
+  - 0.5
+  - 0.5
 models:
   Decision Tree: 'dt'
-  #Gaussian Naive Bayes: 'gnb'
-  #Logistic Regression: 'lgr'
-  #Gradient_Boosted_Trees: 'gbt'
+  Gaussian Naive Bayes: 'gnb'
+  Logistic Regression: 'lgr'
+  Gradient_Boosted_Trees: 'gbt'
 constraints:
   Demografic Parity: 'DP'
   Equalized Odds: 'EO'

@@ -22,6 +22,7 @@ from fairlearn.metrics import *
 from raiwidgets import FairnessDashboard
 
 from scripts.evaluation_utils import evaluating_model
+from scripts.visualization_utils import visual_repay_dist, visual_scores_by_race
 
 def load_args(file):
     """ Load args and run some basic checks.
@@ -67,6 +68,71 @@ def adjust_demographic_ratio(x_data, y_data, race_ratio):
 
     return x_data[idx,:], y_data[idx]
 
+def adjust_set_ratios(x_data, y_data, race_ratio, label_ratio,between_group_balance = False):
+    #0,1 are black,white
+
+    set_size = len(y_data)
+    set_size_0 = len(y_data[np.where(x_data[:, 1] == 0)[0]])
+    set_size_1 = len(y_data[np.where(x_data[:, 1] == 1)[0]])
+
+    if race_ratio != None:
+        num_samples_0 = int(set_size * race_ratio[0])
+        num_samples_1 = int(set_size * race_ratio[1])
+
+        idx_0 = np.where(x_data[:, 1] == 0)[0]
+        idx_1 = np.where(x_data[:, 1] == 1)[0]
+
+        if len(idx_0) < num_samples_0:
+            num_samples_0 = len(idx_0)
+            num_samples_1 = int(num_samples_0/race_ratio[0] * race_ratio[1])
+        elif len(idx_1) < num_samples_1:
+            num_samples_1 = len(idx_1)
+            num_samples_0 = int(num_samples_1/race_ratio[1] * race_ratio[0])
+
+        idx_0 = idx_0[:num_samples_0]
+        idx_1 = idx_1[:num_samples_1]
+        idx = sorted(np.concatenate((idx_0,idx_1)))
+
+    return x_data[idx,:], y_data[idx]
+
+def adjust_label_ratio(x_data, y_data, label_ratio):
+
+    num_0P = int(set_size_0 * label_ratio[1])
+    num_1P = int(set_size_1 * label_ratio[1])
+    num_0N = int(set_size_0 * label_ratio[0])
+    num_1N = int(set_size_1 * label_ratio[0])
+
+    idx_0N = np.where((x_data[:, 1] == 0) & (y_data == 0))[0]
+    idx_1N = np.where((x_data[:, 1] == 1) & (y_data == 0))[0]
+    idx_0P = np.where((x_data[:, 1] == 0) & (y_data == 1))[0]
+    idx_1P = np.where((x_data[:, 1] == 1) & (y_data == 1))[0]
+
+    #print(len(idx_0N),len(idx_0P),len(idx_1N),len(idx_1P))
+    print(num_0N,num_0P,num_1N,num_1P)
+
+    if len(idx_0P) < num_0P:
+        num_0P = len(idx_0P)
+        num_0N = int(num_0P/label_ratio[1] * label_ratio[0])
+    if len(idx_0N) < num_0N:
+        num_0N = len(idx_0N)
+        num_0P = int(num_0N/label_ratio[0] * label_ratio[1])
+    if len(idx_1P) < num_1P:
+        num_1P = len(idx_1P)
+        num_1N = int(num_1P/label_ratio[1] * label_ratio[0])
+    if len(idx_1N) < num_1N:
+        num_1N = len(idx_1N)
+        num_1P = int(num_1N/label_ratio[0] * label_ratio[1])
+
+    idx_0N = idx_0N[:num_0N]
+    idx_1N = idx_1N[:num_1N]
+    idx_0P = idx_0P[:num_0P]
+    idx_1P = idx_1P[:num_1P]
+
+    print('Black N/P:',num_0N,'/',num_0P,'White N/P:',num_1N,'/',num_1P)
+
+    idx = sorted(np.concatenate((idx_0N,idx_0P,idx_1N,idx_1P)))
+    return x_data[idx,:], y_data[idx]
+
 def balance_label_ratio(x_data, y_data):
     set_size = len(y_data)
 
@@ -77,16 +143,14 @@ def balance_label_ratio(x_data, y_data):
     num_0 = min(len(idx_0N),len(idx_0P))
     num_1 = min(len(idx_1N),len(idx_1P))
 
-
     idx_0N = idx_0N[:num_0]
     idx_1N = idx_1N[:num_1]
     idx_0P = idx_0P[:num_0]
     idx_1P = idx_1P[:num_1]
     idx = sorted(np.concatenate((idx_0N,idx_0P,idx_1N,idx_1P)))
-
     return x_data[idx,:], y_data[idx]
 
-def prep_data(data, test_size, demo_ratio, weight_index):
+def prep_data(data, test_size, demo_ratio,label_ratio, weight_index):
     # might need to include standardscaler here
 
     x = data[['score', 'race']].values
@@ -97,14 +161,19 @@ def prep_data(data, test_size, demo_ratio, weight_index):
     #print('Here are the y values: ', y)
 
 
-    X_train, y_train = adjust_demographic_ratio(X_train, y_train, demo_ratio)
-
+    #X_train, y_train = adjust_demographic_ratio(X_train, y_train, demo_ratio)
     X_test, y_test = adjust_demographic_ratio(X_test, y_test, demo_ratio)
     print('Training set:', len(y_train))
     print('Testing set:', len(y_test))
 
-    X_test,y_test = balance_label_ratio(X_test, y_test)
+
+    #X_train, y_train = adjust_label_ratio(X_train, y_train, label_ratio)
+    X_test, y_test = adjust_label_ratio(X_test, y_test, label_ratio)
+    print('Training set:', len(y_train))
     print('Testing set:', len(y_test))
+
+    #X_test,y_test = balance_label_ratio(X_test, y_test)
+    #print('Testing set:', len(y_test))
     # collect our sensitive attribute
     race_train = X_train[:, 1]
     race_test = X_test[:, 1]
@@ -315,14 +384,14 @@ def add_constraint(model, constraint_str, reduction_alg, X_train, y_train, race_
     return mitigator, results_overall, results_black, results_white, y_pred_mitigated
 
 
-def classify(data_path,results_dir,weight_idx,testset_size,demo_ratio,models,constraints,reduction_algorithms,save):
+def classify(data_path,results_dir,weight_idx,testset_size,demo_ratio,label_ratio, models,constraints,reduction_algorithms,save):
 
     warnings.filterwarnings('ignore', category=FutureWarning)
 
     # Load and Prepare data
     data = get_data(data_path)
 
-    X_train, X_test, y_train, y_test, race_train, race_test, sample_weight_train, sample_weight_test = prep_data(data=data, test_size=testset_size,demo_ratio=demo_ratio, weight_index=weight_idx)
+    X_train, X_test, y_train, y_test, race_train, race_test, sample_weight_train, sample_weight_test = prep_data(data, testset_size,demo_ratio, label_ratio, weight_idx)
 
 
     # split up X_test by race
