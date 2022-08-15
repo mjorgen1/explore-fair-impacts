@@ -65,7 +65,6 @@ def adjust_demographic_ratio(x_data, y_data, race_ratio):
     idx_0 = idx_0[:num_samples_0]
     idx_1 = idx_1[:num_samples_1]
     idx = sorted(np.concatenate((idx_0,idx_1)))
-
     return x_data[idx,:], y_data[idx]
 
 def adjust_black_label_ratio(x_data, y_data, label_ratio):
@@ -79,8 +78,6 @@ def adjust_black_label_ratio(x_data, y_data, label_ratio):
     idx_1N = np.where((x_data[:, 1] == 1) & (y_data == 0))[0]
     idx_1P = np.where((x_data[:, 1] == 1) & (y_data == 1))[0]
 
-    print(num_0N,num_0P)
-
     if len(idx_0P) < num_0P:
         num_0P = len(idx_0P)
         num_0N = int(num_0P/label_ratio[1] * label_ratio[0])
@@ -91,7 +88,6 @@ def adjust_black_label_ratio(x_data, y_data, label_ratio):
     idx_0N = idx_0N[:num_0N]
     idx_0P = idx_0P[:num_0P]
 
-    print('Black N/P:',num_0N,'/',num_0P)
 
     idx = sorted(np.concatenate((idx_0N,idx_0P,idx_1N,idx_1P)))
 
@@ -112,8 +108,6 @@ def balance_between_group_label_ratio(x_data, y_data, label_ratio):
     idx_0P = np.where((x_data[:, 1] == 0) & (y_data == 1))[0]
     idx_1P = np.where((x_data[:, 1] == 1) & (y_data == 1))[0]
 
-    #print(len(idx_0N),len(idx_0P),len(idx_1N),len(idx_1P))
-    print(num_0N,num_0P,num_1N,num_1P)
 
     if len(idx_0P) < num_0P:
         num_0P = len(idx_0P)
@@ -143,8 +137,6 @@ def balance_between_group_label_ratio(x_data, y_data, label_ratio):
     idx_0P = idx_0P[:num_0P]
     idx_1P = idx_1P[:num_1P]
 
-    print('Black N/P:',num_0N,'/',num_0P,'White N/P:',num_1N,'/',num_1P)
-
     idx = sorted(np.concatenate((idx_0N,idx_0P,idx_1N,idx_1P)))
     return x_data[idx,:], y_data[idx]
 
@@ -166,6 +158,13 @@ def balance_label_ratio(x_data, y_data):
     idx = sorted(np.concatenate((idx_0N,idx_0P,idx_1N,idx_1P)))
     return x_data[idx,:], y_data[idx]
 
+def print_type_ratios(x_data,y_data):
+    idx_0N = np.where((x_data[:, 1] == 0) & (y_data == 0))[0]
+    idx_1N = np.where((x_data[:, 1] == 1) & (y_data == 0))[0]
+    idx_0P = np.where((x_data[:, 1] == 0) & (y_data == 1))[0]
+    idx_1P = np.where((x_data[:, 1] == 1) & (y_data == 1))[0]
+    print('Black N/P:',len(idx_0N),'/',len(idx_0P),'White N/P:',len(idx_1N),'/',len(idx_1P))
+
 def prep_data(data, test_size, demo_ratio,label_ratio,balance_test_set, weight_index):
     # might need to include standardscaler here
 
@@ -178,15 +177,20 @@ def prep_data(data, test_size, demo_ratio,label_ratio,balance_test_set, weight_i
 
 
     X_train, y_train = adjust_black_label_ratio(X_train, y_train, label_ratio)
+    print('Training set:', len(y_train))
+    print_type_ratios(X_train,y_train)
     if balance_test_set == True:
         X_test, y_test = balance_label_ratio(X_test, y_test)
-    print('Training set:', len(y_train))
     print('Testing set:', len(y_test))
+    print_type_ratios(X_test,y_test)
 
+    print('Adjusting demo ratio:')
     X_train, y_train = adjust_demographic_ratio(X_train, y_train, demo_ratio[0])
     X_test, y_test = adjust_demographic_ratio(X_test, y_test, demo_ratio[1])
     print('Training set:', len(y_train))
+    print_type_ratios(X_train,y_train)
     print('Testing set:', len(y_test))
+    print_type_ratios(X_test,y_test)
 
 
 

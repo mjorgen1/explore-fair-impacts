@@ -7,7 +7,7 @@ demo_ratio:
   - #Training
     - 0.5 #Black
     - 0.5 #White
-  -
+  - #Testing
     - 0.5 #Black
     - 0.5 #White
   #Testing
