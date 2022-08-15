@@ -11,7 +11,7 @@ demo_ratio:
     - 0.5 #Black
     - 0.5 #White
   #Testing
-label_ratio: # For Black Group
+label_ratio: # For Group Black
   - 0.5 #False 0
   - 0.5 #True 1
 balance_test_set: True
