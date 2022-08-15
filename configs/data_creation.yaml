@@ -1,7 +1,7 @@
 
 data_dir: 'data/raw/'
-result_path: 'data/final/balanced_set_100.csv'
-order_of_magnitude: 100000
+result_path: 'data/final/balanced_set_200_2.csv'
+order_of_magnitude: 200000
 group_size_ratio:
   - 0.5
   - 0.5
