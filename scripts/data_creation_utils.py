@@ -10,27 +10,25 @@ import Liu_paper_code.fico as fico
 import Liu_paper_code.distribution_to_loans_outcomes as dlo
 
 def load_args(file):
-    """ Load args and run some basic checks.
-    Args:
-        - file <str>: full path to .yaml config file
-    Returns:
-        - data <dict>: dictionary with all args from file
+    """
+    Load args and run some basic checks.
+        Args:
+            - file <str>: full path to .yaml config file
+        Returns:
+            - data <dict>: dictionary with all args from file
     """
     with open(file, "r") as stream:
-
         try:
             data = yaml.load(stream, Loader=SafeLoader)
             print('Arguments: ',data)
         except yaml.YAMLError as exc:
             print(exc)
-
     return data
 
 
 def get_pmf(cdf):
     """
     Calculation of the probability mass function. (to populate group distributions)
-
     Code from Lydia's delayedimpact repository FICO-figures.ipynb:
     https://github.com/lydiatliu/delayedimpact/tree/master/notebooks
         Args:
@@ -44,7 +42,7 @@ def get_pmf(cdf):
         pis[score+1] = cdf[score+1] - cdf[score]
     return pis
 
-# Code is primarily from Lydia's FICO-figures.ipynb
+
 def load_and_parse(data_dir):
     """
     Loading the Fico data and applying some parsing steps.
@@ -86,8 +84,8 @@ def load_and_parse(data_dir):
     pis = np.vstack([pi_A, pi_B])
 
     # demographic statistics
-    group_ratio = np.array((totals['Black'], totals['White']))
-    group_size_ratio = group_ratio/group_ratio.sum()
+    #group_ratio = np.array((totals['Black'], totals['White']))
+    #group_size_ratio = group_ratio/group_ratio.sum()
 
     # to get loan repay probabilities for a given score
     loan_repaid_probs = [lambda i: repay_A[scores[scores.get_loc(i,method='nearest')]],
@@ -115,7 +113,6 @@ def get_repay_probabilities(samples, scores_arr, repay_probs, round_num):
         Returns:
             - sample_probs <numpy.ndarray>: rounded repay probability for the samples
     """
-
     sample_probs = []
     for index, score in enumerate(samples):
         prob_index = np.where(scores_arr == score)
@@ -130,7 +127,8 @@ def get_repay_probabilities(samples, scores_arr, repay_probs, round_num):
         sample_probs.insert(index, repay_prob)
     return np.asarray(sample_probs)
 
-def get_scores(scores, round_num):  # takes in a list and returns a list
+
+def get_scores(scores, round_num):
     """
     Returns rounded scores.
         Args:
@@ -154,45 +152,89 @@ def get_scores(scores, round_num):  # takes in a list and returns a list
     return updated_scores
 
 
-
-def load_parse_and_save(data_dir, result_path, order_of_magnitude, group_size_ratio, round_num_scores, round_num_repay_probs,shuffle_seed = None):
+def adjust_set_ratios(x_data, y_data, label_ratio, race_ratio, set_size_upper_bound):
     """
-    Complete pipeline of loading, parsing and saving of the created dataset.
+    Changes the proportions of samples in the set. Proportion of each group (race) and proportion of labels for the Black (0) group.
         Args:
-            - data_dir <str>: Path to the directorz of the raw data
-            - results_path <str>: Path for the data file, including its file_name
-            - order_of_magnitude <int>: total size of the dataset
-            - group_size_ratio <list>: contains 2 floats between 0 and 1 (sum = 1), representing the ratio of black to white samples generated
-            - round_num_scores <list> {0,1,2}: look at def:get_scores
-            - round_num_repay_probs <int> {0,1,2}: look at def:get_repay_probabilities
-            - shuffle_seed <int>: Seed to be able to reproduce datasets
-
+            - x_data <numpy.ndarray>: ['score','repay_probability','race'] -> array of samples
+            - y_data <numpy.ndarray>: ['repay_indices'] -> array of samples
+            - label_ratio <list<float>>: contains two 2 floats between 0 and 1 (sum = 1), representing the ratio of samples with each labels for the black group (False,True)
+            - race_ratio <list<float>>: contains two 2 floats between 0 and 1 (sum = 1), representing the ratio of black to white samples generated (Black,White)
+            - set_size_upper_bound <int>: absolute upper bound of the size for the dataset (e.g 100,000)
+        Returns:
+            subset of x_data and y_data
     """
+    # Black = 0; White = 1
+    # limits the absolute test_size if necessary
+    if len(np.where(x_data[:, 2] == 0)[0]) > set_size_upper_bound * race_ratio[0]:
+        set_size_0 = set_size_upper_bound * race_ratio[0]
+    else:
+        set_size_0 = len(np.where(x_data[:, 2] == 0)[0])
 
-    # Make repay probabilities into percentages from decimals
-    # NOTE: A is Black, B is White
-    scores_list,repay_A,repay_B,pi_A,pi_B = load_and_parse(data_dir)
-    scores_arr = np.asarray(get_scores(scores=scores_list, round_num=round_num_scores)) # we recommend 1 or 2 for round_num
+    if len(np.where(x_data[:, 2] == 1)[0]) > set_size_upper_bound * race_ratio[1]:
+        set_size_1 = set_size_upper_bound * race_ratio[1]
+    else:
+        set_size_1 = len(np.where(x_data[:, 2] == 0)[0])
 
-    repay_A_arr = pd.Series.to_numpy(repay_A)*100
-    repay_B_arr = pd.Series.to_numpy(repay_B)*100
+    # number of samples for the Black group, according to the label ratio
+    num_0P = int(set_size_0 * label_ratio[1])
+    num_0N = int(set_size_0 * label_ratio[0])
+    num_1 = int(set_size_1)
 
-    # Sample data according to the pmf
-    # Reference: https://www.w3schools.com/python/ref_random_choices.asp
+    # getting the indices of each samples for each group
+    idx_0N = np.where((x_data[:, 2] == 0) & (y_data == 0))[0]
+    idx_0P = np.where((x_data[:, 2] == 0) & (y_data == 1))[0]
+
+    idx_1 = np.where(x_data[:, 2] == 1)[0]
+
+    # if group size numbers are larger than the available samples for that group adjust it
+    if len(idx_0P) < num_0P:
+        num_0P = len(idx_0P)
+        num_0N = int(num_0P/label_ratio[1] * label_ratio[0])
+    if len(idx_0N) < num_0N:
+        num_0N = len(idx_0N)
+        num_0P = int(num_0N/label_ratio[0] * label_ratio[1])
+
+    # take the amount of samples, by getting the amount of indices
+    idx_0N = idx_0N[:num_0N]
+    idx_0P = idx_0P[:num_0P]
+    idx_1 = idx_1[:num_1]
+    # concatenate indices
+    idx = sorted(np.concatenate((idx_0N,idx_0P,idx_1)))
+
+    return x_data[idx,:], y_data[idx]
+
+
+def sample(group_size_ratio, order_of_magnitude, shuffle_seed,scores_arr, pi_A, pi_B, repay_A_arr, repay_B_arr):
+    """
+    Samples data according to the pmfs and scores from the Fico dataset.
+        Args:
+            - group_size_ratio <list<float>>: contains two 2 floats between 0 and 1 (sum = 1), representing the ratio of black to white samples generated (Black,White)
+            - order_of_magnitude <int>: total size of the datase
+            - shuffle_seed <int>: Seed to control randomness inthe shuffeling of the dataset
+            - scores_arr <list>: list with all avalible scores
+            - pi_A <numpy.ndarray>: pmf of group A
+            - pi_B <numpy.ndarray>: pmf of group B
+            - repay_A_arr <numpy.ndarray>: repay probabilities group A
+            - repay_B_arr <numpy.ndarray>: repay probabilities group B
+        Returns:
+            - data_all_df_shuffled <pd.DataFrame>: shuffled dataFrame
+    """
 
     num_A_samples = int(group_size_ratio[0] * order_of_magnitude)
     num_B_samples = int(group_size_ratio[1] * order_of_magnitude)
 
+    # Sample data according to the pmf
+    # Reference: https://www.w3schools.com/python/ref_random_choices.asp
     samples_A = np.asarray(sorted(choices(scores_arr, pi_A, k=num_A_samples)))
     samples_B = np.asarray(sorted(choices(scores_arr, pi_B, k=num_B_samples)))
 
     # Calculate samples groups' probabilities and make arrays for race
-
     # A == Black == 0 (later defined as 0.0 when converting to pandas df)
-    samples_A_probs = get_repay_probabilities(samples=samples_A,scores_arr=scores_arr, repay_probs=repay_A_arr, round_num=round_num_repay_probs)
+    samples_A_probs = get_repay_probabilities(samples=samples_A,scores_arr=scores_arr, repay_probs=repay_A_arr, round_num=1)
     samples_A_race = np.zeros(num_A_samples, dtype= int)
     # B == White == 1 (later defined as 1.0 when converting to pandas df)
-    samples_B_probs = get_repay_probabilities(samples=samples_B,scores_arr=scores_arr, repay_probs=repay_B_arr, round_num=round_num_repay_probs)
+    samples_B_probs = get_repay_probabilities(samples=samples_B,scores_arr=scores_arr, repay_probs=repay_B_arr, round_num=1)
     samples_B_race = np.ones(num_B_samples, dtype= int)
 
     # Get data in dict form with score and repay prob
@@ -217,14 +259,10 @@ def load_parse_and_save(data_dir, result_path, order_of_magnitude, group_size_ra
 
     # Add Final Column to dataframe, repay indices
     # repay: 1.0, default: 0.0
-
-    # Create a random num and then have that decide given a prob if the person gets a loan or not
-    # (e.g. If 80% prob, then calculate a random num, then if that is below they will get loan, if above, then they don't)
-
-
     probabilities = data_all_df_shuffled['repay_probability']
     repay_indices = []
-
+    # Create a random num and then have that decide given a prob if the person gets a loan or not
+    # (e.g. If 80% prob, then calculate a random num, then if that is below they will get loan, if above, then they don't)
     for index, prob in enumerate(probabilities):
         rand_num = random.randint(0,1000)/10
         if rand_num > prob:  # default
@@ -234,8 +272,71 @@ def load_parse_and_save(data_dir, result_path, order_of_magnitude, group_size_ra
 
     data_all_df_shuffled['repay_indices'] = np.array(repay_indices)
 
+    return data_all_df_shuffled
+
+def load_sample_and_save(data_dir, result_path, order_of_magnitude, group_size_ratio, black_label_ratio, set_size, round_num_scores, shuffle_seed = None):
+    """
+    Complete pipeline of loading, parsing,sampling and saving of the created synthetic dataset.
+        Args:
+            - data_dir <str>: Path to the directorz of the raw data
+            - results_path <str>: Path for the data file, including its file_name
+            - order_of_magnitude <int>: total size of the dataset
+            - group_size_ratio <list<float>>: contains two 2 floats between 0 and 1 (sum = 1), representing the ratio of black to white samples generated (Black,White)
+            - black_label_ratio <list<float>>: contains two 2 floats between 0 and 1 (sum = 1), representing the ratio of samples with each labels for the black group (False,True)
+            - set_size <int>: absolute size for the dataset (e.g 100,000)
+            - round_num_scores <list> {0,1,2}: look at def:get_scores
+            - round_num_repay_probs <int> {0,1,2}: look at def:get_repay_probabilities
+            - shuffle_seed <int>: Seed to cntrol randomness inthe shuffeling of the dataset
+    """
+    # Make repay probabilities into percentages from decimals
+    # NOTE: A is Black, B is White
+    scores_list,repay_A,repay_B,pi_A,pi_B = load_and_parse(data_dir)
+    scores_arr = np.asarray(get_scores(scores=scores_list, round_num=round_num_scores)) # we recommend 1 or 2 for round_num
+
+    repay_A_arr = pd.Series.to_numpy(repay_A)*100
+    repay_B_arr = pd.Series.to_numpy(repay_B)*100
+
+    # generate first batch of samples:
+    data = sample(group_size_ratio, order_of_magnitude,shuffle_seed, scores_arr, pi_A, pi_B, repay_A_arr, repay_B_arr)
+
+    # split the data cols (x,y)
+    x = data[['score','repay_probability', 'race']].values
+    y = data['repay_indices'].values
+
+    # adjust the set according to the ratios specified
+    x,y = adjust_set_ratios(x, y, black_label_ratio, group_size_ratio, set_size)
+    idx_An = np.where((x[:, 2] == 0) & (y == 0))[0]
+    idx_Ap = np.where((x[:, 2] == 0) & (y == 1))[0]
+    idx_B = np.where((x[:, 2] == 1))[0]
+    i = 1
+    # merge x,y back into a DataFrame
+    df = {'score':x[:,0],'repay_probability': x[:,1],'race':x[:,2],'repay_indices': y}
+    data = pd.DataFrame(df)
+
+    # if dataset it to small, samplee a larger batch
+    while len(y) < set_size:
+        i += 1
+        # Generate new samples
+        data = sample(group_size_ratio, order_of_magnitude*i,shuffle_seed, scores_arr, pi_A, pi_B, repay_A_arr, repay_B_arr)
+
+        # split the data cols (x,y)
+        x = data[['score','repay_probability', 'race']].values
+        y = data['repay_indices'].values
+
+        # adjust the set according to the ratios specified
+        x,y = adjust_set_ratios(x,y, black_label_ratio, group_size_ratio, set_size)
+        idx_An = np.where((x[:, 2] == 0) & (y == 0))[0]
+        idx_Ap = np.where((x[:, 2] == 0) & (y == 1))[0]
+        idx_B = np.where((x[:, 2] == 1))[0]
+        # merge x,y back into a DataFrame
+        df = {'score':x[:,0],'repay_probability': x[:,1],'race':x[:,2],'repay_indices': y}
+        data = pd.DataFrame(df)
+
+    # print proportions of dataset
+    print(i,'Black N/P:',len(idx_An),'/',len(idx_Ap),'White:',len(idx_B))
+
     #Save pandas Dataframes in CSV
-    data_all_df_shuffled.to_csv(index=False, path_or_buf=result_path)
+    data.to_csv(index=False, path_or_buf=result_path)
 
     # To save the data separately by race
     #data_A_df.to_csv(index=False, path_or_buf='simData_2decProbs_0decScores_groupA_black.csv')
