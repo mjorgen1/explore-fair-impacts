@@ -287,8 +287,8 @@ def evaluation_by_race(X_test, y_test, race_test, y_predict, sample_weight):
         else:
             print('You should not end up here...')
 
-    accuracy_black, cs_m_black, f1_m_black, f1_w_black, f1_b_black, tnr_black, tpr_black, fner_black, fper_black = analysis(y_test_black, y_pred_black, sw_black, 'EVALUATION FOR BLACK GROUP')
-    accuracy_white, cs_m_white, f1_m_white, f1_w_white, f1_b_white, tnr_white, tpr_white, fner_white, fper_white = analysis(y_test_white, y_pred_white, sw_white, '\nEVALUATION FOR WHITE GROUP')
+    accuracy_black, cs_m_black, f1_m_black, f1_w_black, f1_b_black, tnr_black, tpr_black, fner_black, fper_black = analysis(y_test_black, y_pred_black, sw_black)
+    accuracy_white, cs_m_white, f1_m_white, f1_w_white, f1_b_white, tnr_white, tpr_white, fner_white, fper_white = analysis(y_test_white, y_pred_white, sw_white)
     sr_bygroup = get_selection_rates(y_test, y_predict, race_test, 1)  #sr_bygroup is a pandas series
     sr_black = round(sr_bygroup.values[0]*100, 2)
     sr_white = round(sr_bygroup.values[1]*100, 2)
@@ -315,7 +315,7 @@ def evaluating_model(constraint_str,X_test,y_test, y_pred, sample_weight_test,ra
             - results_white <>:
     """
     overall_message = 'Evaluation of '+ constraint_str + '-constrained classifier overall:'
-    accuracy, cs_matrix, f1_micro, f1_weighted, f1_binary, tnr, tpr, fner, fper = analysis(y_test, y_pred, sample_weight_test, overall_message)
+    accuracy, cs_matrix, f1_micro, f1_weighted, f1_binary, tnr, tpr, fner, fper = analysis(y_test, y_pred, sample_weight_test)
     sr = get_selection_rates(y_test, y_pred, race_test, 0)
     #print('\n')
     di_B, di_W = calculate_delayed_impact(X_test, y_test, y_pred, race_test)

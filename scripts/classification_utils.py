@@ -25,11 +25,12 @@ from scripts.evaluation_utils import evaluating_model
 from scripts.visualization_utils import visual_repay_dist, visual_scores_by_race
 
 def load_args(file):
-    """ Load args and run some basic checks.
-    Args:
-        file <str> =
-
-
+    """
+    Load args and run some basic checks.
+        Args:
+            - file <str>: full path to .yaml config file
+        Returns:
+            - data <dict>: dictionary with all args from file
     """
     with open(file, "r") as stream:
         try:
@@ -37,7 +38,6 @@ def load_args(file):
             print('Arguments: ',data)
         except yaml.YAMLError as exc:
             print(exc)
-
     return data
 
 
@@ -47,37 +47,30 @@ def get_data(file):
     #print(data)
     return data
 
-def adjust_demographic_ratio(x_data, y_data, race_ratio):
-    set_size = len(y_data)
-    num_samples_0 = int(set_size * race_ratio[0])
-    num_samples_1 = int(set_size * race_ratio[1])
 
-    idx_0 = np.where(x_data[:, 1] == 0)[0]
+def adjust_train_set_ratios(x_data, y_data, label_ratio, race_ratio, train_set_bound):
+
+    if len(np.where(x_data[:, 1] == 0)[0]) > train_set_bound * race_ratio[0]:
+        set_size_0 = train_set_bound * race_ratio[0]
+    else:
+        print('problem')
+        set_size_0 = len(np.where(x_data[:, 1] == 0)[0])
+
+    if len(np.where(x_data[:, 1] == 1)[0]) > train_set_bound * race_ratio[1]:
+        set_size_1 = train_set_bound * race_ratio[1]
+    else:
+        print('problem')
+        set_size_1 = len(np.where(x_data[:, 1] == 0)[0])
+
+    num_0P = int(set_size_0 * label_ratio[1])
+    num_0N = int(set_size_0 * label_ratio[0])
+    num_1 = int(set_size_1)
+
+    idx_0N = np.where((x_data[:, 1] == 0) & (y_data == 0))[0]
+    idx_0P = np.where((x_data[:, 1] == 0) & (y_data == 1))[0]
+
     idx_1 = np.where(x_data[:, 1] == 1)[0]
 
-    if len(idx_0) < num_samples_0:
-        num_samples_0 = len(idx_0)
-        num_samples_1 = int(num_samples_0/race_ratio[0] * race_ratio[1])
-    elif len(idx_1) < num_samples_1:
-        num_samples_1 = len(idx_1)
-        num_samples_0 = int(num_samples_1/race_ratio[1] * race_ratio[0])
-
-    idx_0 = idx_0[:num_samples_0]
-    idx_1 = idx_1[:num_samples_1]
-    idx = sorted(np.concatenate((idx_0,idx_1)))
-    return x_data[idx,:], y_data[idx]
-
-def adjust_black_label_ratio(x_data, y_data, label_ratio):
-    set_size_0 = len(np.where(x_data[:, 1] == 0)[0])
-    num_0P = int(set_size_0 * label_ratio[1])
-    num_0N = int(set_size_0 * label_ratio[0])
-
-    idx_0N = np.where((x_data[:, 1] == 0) & (y_data == 0))[0]
-    idx_0P = np.where((x_data[:, 1] == 0) & (y_data == 1))[0]
-
-    idx_1N = np.where((x_data[:, 1] == 1) & (y_data == 0))[0]
-    idx_1P = np.where((x_data[:, 1] == 1) & (y_data == 1))[0]
-
     if len(idx_0P) < num_0P:
         num_0P = len(idx_0P)
         num_0N = int(num_0P/label_ratio[1] * label_ratio[0])
@@ -87,76 +80,47 @@ def adjust_black_label_ratio(x_data, y_data, label_ratio):
 
     idx_0N = idx_0N[:num_0N]
     idx_0P = idx_0P[:num_0P]
-
-
-    idx = sorted(np.concatenate((idx_0N,idx_0P,idx_1N,idx_1P)))
+    idx_1 = idx_1[:num_1]
+    idx = sorted(np.concatenate((idx_0N,idx_0P,idx_1)))
 
     return x_data[idx,:], y_data[idx]
 
-def balance_between_group_label_ratio(x_data, y_data, label_ratio):
-    set_size = len(y_data)
-    num_samples_0 = int(set_size * race_ratio[0])
-    num_samples_1 = int(set_size * race_ratio[1])
 
-    num_0P = int(set_size_0 * label_ratio[1])
-    num_1P = int(set_size_1 * label_ratio[1])
-    num_0N = int(set_size_0 * label_ratio[0])
-    num_1N = int(set_size_1 * label_ratio[0])
+def adjust_test_set_ratios(x_data, y_data, race_ratio, balance_test_set, test_set_bound):
 
-    idx_0N = np.where((x_data[:, 1] == 0) & (y_data == 0))[0]
-    idx_1N = np.where((x_data[:, 1] == 1) & (y_data == 0))[0]
-    idx_0P = np.where((x_data[:, 1] == 0) & (y_data == 1))[0]
-    idx_1P = np.where((x_data[:, 1] == 1) & (y_data == 1))[0]
+    if balance_test_set:
+        idx_0N = np.where((x_data[:, 1] == 0) & (y_data == 0))[0]
+        idx_1N = np.where((x_data[:, 1] == 1) & (y_data == 0))[0]
+        idx_0P = np.where((x_data[:, 1] == 0) & (y_data == 1))[0]
+        idx_1P = np.where((x_data[:, 1] == 1) & (y_data == 1))[0]
+        num = min(len(idx_0N),len(idx_0P),len(idx_1N),len(idx_1P))
+        if num > test_set_bound * 0.25:
+            num = int(test_set_bound * 0.25)
 
+        idx_0N = idx_0N[:num]
+        idx_1N = idx_1N[:num]
+        idx_0P = idx_0P[:num]
+        idx_1P = idx_1P[:num]
 
-    if len(idx_0P) < num_0P:
-        num_0P = len(idx_0P)
-        num_0N = int(num_0P/label_ratio[1] * label_ratio[0])
-    if len(idx_0N) < num_0N:
-        num_0N = len(idx_0N)
-        num_0P = int(num_0N/label_ratio[0] * label_ratio[1])
-    if len(idx_1P) < num_1P:
-        num_1P = len(idx_1P)
-        num_1N = int(num_1P/label_ratio[1] * label_ratio[0])
-    if len(idx_1N) < num_1N:
-        num_1N = len(idx_1N)
-        num_1P = int(num_1N/label_ratio[0] * label_ratio[1])
-
-    if idx_0N <= idx_1N:
-        idx_1N = idx_0N
+        idx = sorted(np.concatenate((idx_0N,idx_0P,idx_1N,idx_1P)))
     else:
-        idx_0N = idx_1N
-    if idx_0P <= idx_1P:
-        idx_1P = idx_0P
-    else:
-        idx_0P = idx_1P
+        if len(np.where(x_data[:, 1] == 0)[0]) > test_set_bound * race_ratio[0]:
+            set_size_0 = test_set_bound * race_ratio[0]
+        else:
+            set_size_0 = len(np.where(x_data[:, 1] == 0)[0])
 
+        if len(np.where(x_data[:, 1] == 1)[0]) > test_set_bound * race_ratio[1]:
+            set_size_1 = test_set_bound * race_ratio[1]
+        else:
+            set_size_1 = len(np.where(x_data[:, 1] == 0)[0])
+        idx_0 = np.where(x_data[:, 1] == 0)[0]
+        idx_1 = np.where(x_data[:, 1] == 1)[0]
+        idx_0 = idx_0[:int(set_size_0)]
+        idx_1 = idx_1[:int(set_size_1)]
+        idx = sorted(np.concatenate((idx_0,idx_1)))
 
-    idx_0N = idx_0N[:num_0N]
-    idx_1N = idx_1N[:num_1N]
-    idx_0P = idx_0P[:num_0P]
-    idx_1P = idx_1P[:num_1P]
-
-    idx = sorted(np.concatenate((idx_0N,idx_0P,idx_1N,idx_1P)))
     return x_data[idx,:], y_data[idx]
 
-def balance_label_ratio(x_data, y_data):
-    set_size = len(y_data)
-
-    idx_0N = np.where((x_data[:, 1] == 0) & (y_data == 0))[0]
-    idx_1N = np.where((x_data[:, 1] == 1) & (y_data == 0))[0]
-    idx_0P = np.where((x_data[:, 1] == 0) & (y_data == 1))[0]
-    idx_1P = np.where((x_data[:, 1] == 1) & (y_data == 1))[0]
-
-    num = min(len(idx_0N),len(idx_0P),len(idx_1N),len(idx_1P))
-
-    idx_0N = idx_0N[:num]
-    idx_1N = idx_1N[:num]
-    idx_0P = idx_0P[:num]
-    idx_1P = idx_1P[:num]
-
-    idx = sorted(np.concatenate((idx_0N,idx_0P,idx_1N,idx_1P)))
-    return x_data[idx,:], y_data[idx]
 
 def print_type_ratios(x_data,y_data):
     idx_0N = np.where((x_data[:, 1] == 0) & (y_data == 0))[0]
@@ -165,38 +129,29 @@ def print_type_ratios(x_data,y_data):
     idx_1P = np.where((x_data[:, 1] == 1) & (y_data == 1))[0]
     print('Black N/P:',len(idx_0N),'/',len(idx_0P),'White N/P:',len(idx_1N),'/',len(idx_1P))
 
-def prep_data(data, test_size, demo_ratio,label_ratio,balance_test_set, weight_index):
+
+def prep_data(data, test_size, demo_ratio,label_ratio,balance_test_set, set_bound,weight_index):
     # might need to include standardscaler here
 
     x = data[['score', 'race']].values
     y = data['repay_indices'].values
+    print(' Whole set:', len(y))
+    print_type_ratios(x,y)
     X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=test_size, random_state=42)
 
     #print('Here are the x values: ', x, '\n')
     #print('Here are the y values: ', y)
-
-
-    X_train, y_train = adjust_black_label_ratio(X_train, y_train, label_ratio)
     print('Training set:', len(y_train))
     print_type_ratios(X_train,y_train)
-    if balance_test_set == True:
-        X_test, y_test = balance_label_ratio(X_test, y_test)
+    #X_train, y_train = adjust_train_set_ratios(X_train, y_train, label_ratio, demo_ratio[0], set_bound[0])
+    #print('Training set:', len(y_train))
+    #print_type_ratios(X_train,y_train)
+
+    #print_type_ratios(X_test,y_test)
+    X_test, y_test = adjust_test_set_ratios(X_test, y_test,demo_ratio[1],balance_test_set, set_bound[1])
     print('Testing set:', len(y_test))
     print_type_ratios(X_test,y_test)
 
-    print('Adjusting demo ratio:')
-    X_train, y_train = adjust_demographic_ratio(X_train, y_train, demo_ratio[0])
-    X_test, y_test = adjust_demographic_ratio(X_test, y_test, demo_ratio[1])
-    print('Training set:', len(y_train))
-    print_type_ratios(X_train,y_train)
-    print('Testing set:', len(y_test))
-    print_type_ratios(X_test,y_test)
-
-
-
-
-    #X_test,y_test = balance_label_ratio(X_test, y_test)
-    #print('Testing set:', len(y_test))
     # collect our sensitive attribute
     race_train = X_train[:, 1]
     race_test = X_test[:, 1]
@@ -211,9 +166,6 @@ def prep_data(data, test_size, demo_ratio,label_ratio,balance_test_set, weight_i
         # TODO
         #print('TODO')
     return X_train, X_test, y_train, y_test, race_train, race_test, sample_weight_train, sample_weight_test
-
-
-
 
 
 def get_metrics_df(models_dict, y_true, group):
@@ -252,6 +204,7 @@ def get_metrics_df(models_dict, y_true, group):
                                 for model_name, (preds, scores) in models_dict.items()]
     return pd.DataFrame.from_dict(df_dict, orient='index', columns=models_dict.keys())
 
+
 def get_classifier(model_name):
 
     if model_name == 'dt':
@@ -289,6 +242,7 @@ def get_constraint(constraint_str):
        raise ValueError('unvalid constraint_str')
    return constraint
 
+
 def get_reduction_algo(model,constraint,reduction_alg):
     if reduction_alg == 'EG':
         mitigator = ExponentiatedGradient(model, constraint)
@@ -297,6 +251,7 @@ def get_reduction_algo(model,constraint,reduction_alg):
     else:
         raise ValueError('unvalid reduction_alg parameter {"EG","GS"}')
     return mitigator
+
 
 def get_new_scores(X_test, y_predict, y_test, race_test):
     black_scores = []
@@ -358,6 +313,7 @@ def get_new_scores(X_test, y_predict, y_test, race_test):
 
     return black_scores, white_scores, black_types, white_types
 
+
 # Reference: https://thispointer.com/python-dictionary-with-multiple-values-per-key/
 def add_values_in_dict(sample_dict, key, list_of_values):
     """Append multiple values to a key in the given dictionary"""
@@ -365,6 +321,7 @@ def add_values_in_dict(sample_dict, key, list_of_values):
         sample_dict[key] = list()
     sample_dict[key].extend(list_of_values)
     return sample_dict
+
 
 # Reference: https://stackoverflow.com/questions/53013274/writing-data-to-csv-from-dictionaries-with-multiple-values-per-key
 def save_dict_in_csv(results_dict, fieldnames, name_csv):
@@ -388,8 +345,6 @@ def save_dict_in_csv(results_dict, fieldnames, name_csv):
         csv_file.close()
 
 
-
-##### ONLY USD FOR NOTEBOOK #########
 def add_constraint(model, constraint_str, reduction_alg, X_train, y_train, race_train, race_test, X_test, y_test, y_predict, sample_weight_test, dashboard_bool):
     # set seed for consistent results with ExponentiatedGradient
     #np.random.seed(0)
@@ -403,26 +358,22 @@ def add_constraint(model, constraint_str, reduction_alg, X_train, y_train, race_
     if dashboard_bool:
         pass
         #FairnessDashboard(sensitive_features=race_test,y_true=y_test,y_pred={"initial model": y_predict, "mitigated model": y_pred_mitigated})
-
     return mitigator, results_overall, results_black, results_white, y_pred_mitigated
 
 
-def classify(data_path,results_dir,weight_idx,testset_size,demo_ratio,label_ratio, balance_test_set, models,constraints,reduction_algorithms,save):
+def classify(data_path,results_dir,weight_idx,testset_size,demo_ratio,label_ratio, balance_test_set, set_bound, models,constraints,reduction_algorithms,save):
 
     warnings.filterwarnings('ignore', category=FutureWarning)
-
     # Load and Prepare data
     data = get_data(data_path)
 
-    X_train, X_test, y_train, y_test, race_train, race_test, sample_weight_train, sample_weight_test = prep_data(data, testset_size,demo_ratio, label_ratio,balance_test_set, weight_idx)
-
+    X_train, X_test, y_train, y_test, race_train, race_test, sample_weight_train, sample_weight_test = prep_data(data, testset_size,demo_ratio, label_ratio,balance_test_set,set_bound, weight_idx)
 
     # split up X_test by race
     X_test_b = []
     X_test_w = []
     y_test_b = []
     y_test_w = []
-
 
     for index in range(len(X_test)):
         if race_test[index] == 0:  # black
@@ -431,7 +382,6 @@ def classify(data_path,results_dir,weight_idx,testset_size,demo_ratio,label_rati
         elif race_test[index] == 1:  # white
             X_test_w.append(X_test[index][0])
             y_test_w.append(y_test[index])
-
 
     for model_str in models.values():
         print(model_str)
@@ -447,14 +397,12 @@ def classify(data_path,results_dir,weight_idx,testset_size,demo_ratio,label_rati
         all_types = []
         scores_names = []
 
-
         T_test_b = ['TP' if e==1 else "TN" for e in y_test_b]
         T_test_w = ['TP' if e==1 else "TN" for e in y_test_w]
 
         all_types.extend([T_test_b,T_test_w])
         all_scores.extend([X_test_b,X_test_w])
         scores_names.extend(['testB', 'testW'])
-
 
         # Reference: https://www.datacamp.com/community/tutorials/decision-tree-classification-python
         # train unconstrained model
@@ -471,7 +419,6 @@ def classify(data_path,results_dir,weight_idx,testset_size,demo_ratio,label_rati
         x = data[['score', 'race']].values
         y = data['repay_indices'].values
         scores = cross_val_score(model, x, y, cv=5, scoring='f1_weighted')
-
 
         #save scores and types (TP,FP,TN,FN) in list
         X_b, X_w, T_b, T_w = get_new_scores(X_test, y_predict, y_test, race_test)
@@ -495,7 +442,7 @@ def classify(data_path,results_dir,weight_idx,testset_size,demo_ratio,label_rati
 
                 print(algo_str,constraint_str)
                 mitigator, results_overall, results_black, results_white, y_pred_mitigated = add_constraint(model, constraint_str, algo_str, X_train, y_train, race_train, race_test, X_test, y_test, y_predict, sample_weight_test, dashboard_bool=False)
-
+                # Visualisation
                 if algo_str ==' GS':
                     pass
                     # We can examine the values of lambda_i chosen for us:
@@ -510,15 +457,12 @@ def classify(data_path,results_dir,weight_idx,testset_size,demo_ratio,label_rati
                 all_scores.extend([X_b,X_w])
                 scores_names.extend([f'{algo_str.lower()}{constraint_str.lower()}B', f'{algo_str.lower()}{constraint_str.lower()}W'])
 
-
                 run_key = f'{model_str} {algo_str} {constraint_str} Mitigated'
                 overall_results_dict = add_values_in_dict(overall_results_dict, run_key, results_overall)
                 black_results_dict = add_values_in_dict(black_results_dict, run_key, results_black)
                 white_results_dict = add_values_in_dict(white_results_dict, run_key, results_white)
 
-        #print(overall_results_dict)
-
-        # save evaluations:
+        # save evaluations
         if save == True:
             overall_fieldnames = ['Run', 'Acc', 'ConfMatrix','F1micro', 'F1weighted','F1binary', 'SelectionRate', 'TNR rate', 'TPR rate', 'FNER', 'FPER', 'DIB','DIW', 'DP Diff', 'EO Diff', 'TPR Diff', 'FPR Diff', 'ER Diff']
             byrace_fieldnames = ['Run', 'Acc', 'ConfMatrix','F1micro', 'F1weighted','F1binary', 'SelectionRate', 'TNR rate', 'TPR rate', 'FNER', 'FPER', 'DI']

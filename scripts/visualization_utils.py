@@ -193,7 +193,7 @@ def grid_search_show(model, constraint, y_predict, X_test, y_test, race_test, co
 
 def impact_bar_plots(data_path, b_or_w = 'Black',folders= ['dt','lgr','gbt','gnb']):
     """
-    Bar plots of the Delayed Impact for each model by classifier  
+    Bar plots of the Delayed Impact for each model by classifier
         Args:
             - data_path <str>: path for loading the data file (csv)
             - b_or_w <str>: (Black,White) group indicator
