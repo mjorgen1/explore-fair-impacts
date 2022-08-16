@@ -6,8 +6,19 @@ from sklearn.metrics import classification_report, confusion_matrix, accuracy_sc
 import matplotlib.patches as mpatches
 from scipy import stats
 
-def visualize_data_distribution(path,samples_A,samples_A_probs,samples_B,samples_B_probs):
 
+def visualize_data_distribution(path,samples_A,samples_A_probs,samples_B,samples_B_probs):
+    """
+    Plot of the Repay distribution (by score) by group.
+        Args:
+            - path <str>: path for saving the plot
+            - samples_A <numpy.ndarray>: score samples of group A (x)
+            - samples_A_probs <numpy.ndarray>: repay values of group A (y)
+            - samples_B <numpy.ndarray>: score samples of group B (x)
+            - samples_B_probs <numpy.ndarray>: repay values of group B (y)
+    """
+
+    # (x,y) tuples
     samples_all_A = (samples_A, samples_A_probs)
     samples_all_B = (samples_B, samples_B_probs)
 
@@ -21,8 +32,7 @@ def visualize_data_distribution(path,samples_A,samples_A_probs,samples_B,samples
 
     for data, color, group in zip(data, colors, groups):
         x, y = data
-        #ax.scatter(x, y, alpha=0.8, c=color, edgecolors='none', s=30, label=group)
-        ax.plot(x, y, alpha=0.8, c=color, label=group) #plot instead of scatter
+        ax.plot(x, y, alpha=0.8, c=color, label=group)
 
     plt.title('Sample Distributions by Group')
     plt.legend(loc=2)
@@ -32,7 +42,15 @@ def visualize_data_distribution(path,samples_A,samples_A_probs,samples_B,samples
     plt.show()
 
 
-def visual_scores_by_race(path,fname,x,y):
+def visual_scores_by_race(path,fname,x):
+    """
+    Plots the number of individuals for each score by group (race).
+        Args:
+            - path <str>: path for saving the plot
+            - fname <str>: file name for saving the plot
+            - x <numpy.ndarray>: ['score','race'] list of all score samples and race indicator
+    """
+
     # make histogram of credit scores by race
     fig, axs = plt.subplots(1, 2, sharey=True, tight_layout=True)
 
@@ -55,8 +73,15 @@ def visual_scores_by_race(path,fname,x,y):
     plt.show()
 
 
-
 def visual_repay_dist(path,fname,x,y):
+    """
+    Plots the number of repay labels by group (race).
+        Args:
+            - path <str>: path for saving the plot
+            - fname <str>: file name for saving the plot
+            - x <numpy.ndarray>: ['score','race'] list of all score samples and race indicator
+            - y <numpy.ndarray>: ['repay_indices'] list of all lables of the samples
+    """
     fig, axs = plt.subplots(1, 2, sharey=True, tight_layout=True)
 
     fig.suptitle(f'Histogram of Repay Distribution for {fname} data')
@@ -85,6 +110,21 @@ def visual_repay_dist(path,fname,x,y):
 
 
 def update_model_perf_dict(sweep, models_dict, sweep_preds, sweep_scores, non_dominated, decimal, y_test, race_test, model_name):
+    """
+    ...
+        Args:
+            - sweep <>:
+            - models_dict <>:
+            - sweep_preds <>:
+            - sweep_scores <>:
+            - non_dominated <>:
+            - decimal <>:
+            - y_test <>:
+            - race_test <>:
+            - model_name <>:
+        Returns:
+            - models_dict <>:
+    """
     # Compare GridSearch models with low values of fairness-diff with the previously constructed models
     ##print(model_name)
     grid_search_dict = {model_name.format(i): (sweep_preds[i], sweep_scores[i]) #{'GS_DP'.format(i): (sweep_preds[i], sweep_scores[i])
@@ -94,7 +134,26 @@ def update_model_perf_dict(sweep, models_dict, sweep_preds, sweep_scores, non_do
     #print(get_metrics_df(models_dict, y_test, race_test))
     return models_dict
 
+
 def grid_search_show(model, constraint, y_predict, X_test, y_test, race_test, constraint_name, model_name, models_dict, decimal):
+    """
+    Plots grid...
+        Args:
+            - model <>:
+            - constraint <>:
+            - y_predict <>:
+            - X_test <>:
+            - y_test <>:
+            - race_test <>:
+            - y_test <>:
+            - race_test <>:
+            - constraint_name <>:
+            - model_name <>:
+            - models_dict <>:
+            - decimal <>:
+        Returns:
+            - models_dict <>:
+    """
     sweep_preds = [predictor.predict(X_test) for predictor in model.predictors_]
     sweep_scores = [predictor.predict_proba(X_test)[:, 1] for predictor in model.predictors_]
 
@@ -129,40 +188,47 @@ def grid_search_show(model, constraint, y_predict, X_test, y_test, race_test, co
     plt.legend(bbox_to_anchor=(1.55, 1))
     plt.show()
     models_dict = update_model_perf_dict(sweep, models_dict, sweep_preds, sweep_scores, non_dominated, decimal, y_test, race_test, model_name)
-
     return models_dict
 
-def heatplot(df):
-    print(df)
-    sns.heatmap(df,cmap='mako')
 
 def impact_bar_plots(data_path, b_or_w = 'Black',folders= ['dt','lgr','gbt','gnb']):
-
-    dfs = {} # list for pandas dfs
+    """
+    Bar plots of the Delayed Impact for each model by classifier  
+        Args:
+            - data_path <str>: path for loading the data file (csv)
+            - b_or_w <str>: (Black,White) group indicator
+            - folders <list<str>>: list with the names of the model folder where csv are stored
+    """
+    # loading all datafiles and store them in a dict
+    dfs = {} # dict for pandas dfs
     for i,f in enumerate(folders):
-        if b_or_w == 'Black':
+        if b_or_w == 'Black': # load results of black group
             path = f'{data_path}{f}/{f}_black_results.csv'
-        elif b_or_w == 'White':
+        elif b_or_w == 'White': # load results of white group
             path = f'{data_path}{f}/{f}_white_results.csv'
         df = pd.read_csv(path,index_col=0)
         df = df.reset_index()
         dfs[i] = list(df.iloc[:,-1])
-        plt.rcParams["figure.figsize"] = [8, 7]
-        plt.rcParams["figure.autolayout"] = True
-        plt.rcParams["font.size"] = 11
 
+    plt.rcParams["figure.figsize"] = [8, 7]
+    plt.rcParams["figure.autolayout"] = True
+    plt.rcParams["font.size"] = 11
+
+    # Colors and labels for bars,labels and legend
     colors=['#FFAE49','#024B7A','#024B7A','#024B7A','#024B7A','#024B7A','#44B7C2','#44B7C2','#44B7C2','#44B7C2','#44B7C2']
     colors_text=['black','white','white','white','white','white','black','black','black','black','black']
     black_patch = mpatches.Patch(color='#FFAE49', label ='No Reduction')
     blue_patch = mpatches.Patch(color='#024B7A', label ='Expo. Gradient Reduction')
     cyan_patch = mpatches.Patch(color='#44B7C2', label ='Grid Search Reduction')
     idx = ['Unmitigated', 'DP', 'EO', 'TPRP', 'FPRP', 'ERP', ' DP', ' EO', ' TPRP', ' FPRP', ' ERP']
+
+    # enumerate through folders and make a bar plot for each classifier
     for i in range(len(folders)):
         fig, ax = plt.subplots()
         ax.set_title(f'Delayed Impact for all Models for Classifier: {folders[i]} / Group: {b_or_w}\n\n')
         plt.bar(idx,dfs[i],width= 0.9, color=colors)
 
-        # y value on top of each bar
+        # Add the y value as label on top of each bar
         for j, v in enumerate(dfs[i]):
             ax.text(j, v, v, ha = 'center', color = 'black', fontsize= 10, bbox = dict(facecolor= '#F9F9F9', edgecolor= colors[j], alpha=0.9, pad=0.5))
 
@@ -174,5 +240,6 @@ def impact_bar_plots(data_path, b_or_w = 'Black',folders= ['dt','lgr','gbt','gnb
 
         #legend
         ax.legend(handles=[black_patch,blue_patch,cyan_patch], bbox_to_anchor=(0,1.02,1,0.2), loc="lower left",mode="expand", borderaxespad=0, ncol=3)
+
         plt.savefig(f'{folders[i]}_{b_or_w}_DI.png')
     plt.show()

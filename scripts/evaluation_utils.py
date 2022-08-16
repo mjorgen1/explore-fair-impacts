@@ -10,8 +10,13 @@ from fairlearn.metrics import *
 
 
 
-
 def inspect_MinMax(samples_A_probs,samples_B_probs):
+    """
+    Prints the lowest and highest repay probability for each group.
+        Args:
+            - samples_A_probs <numpy.ndarray>: probabilitys of the samples of group A
+            - samples_B_probs <numpy.ndarray>: probabilitys of the samples of group B
+    """
     max_val_A = np.max(samples_A_probs)
     min_val_A = np.min(samples_A_probs)
     print('the range of the Group A (Black) repay probabilities is: ', max_val_A-min_val_A)
@@ -26,6 +31,20 @@ def inspect_MinMax(samples_A_probs,samples_B_probs):
 
 
 def print_fairness_metrics(y_true, y_pred, sensitive_features, sample_weight):
+    """
+    Camputing and and printing of numerous dairness metrics.
+        Args:
+            - y_true <>:
+            - y_pred <>:
+            - sensitive_features <>:
+            - samples_weight <>:
+        Returns:
+            - dp_diff <>:
+            - eod_diff <>:
+            - eoo_diff <>:
+            - fpr_dif <>:
+            - er_dif <>:
+    """
     #sr_mitigated = MetricFrame(metric=selection_rate, y_true=y_true, y_pred=y_pred,
     #                           sensitive_features=sensitive_features)
     ##print('Selection Rate Overall: ', sr_mitigated.overall)
@@ -52,16 +71,28 @@ def print_fairness_metrics(y_true, y_pred, sensitive_features, sample_weight):
     er_dif = er_diff(y_true, y_pred, sensitive_features)
     #print('ER Difference: ', er_dif)
     #print('')
-
     return dp_diff, eod_diff, eoo_diff, fpr_dif, er_dif
 
 
 def calculate_delayed_impact(X_test, y_true, y_pred, race_test):
-    # TPs --> score increase by 75
-    # FPs --> score drop of 150
+    """
+    Calculate the Delayed Impact (DI) (average score change of each group) (considering TP,FP)
+        Args:
+            - X_test <numpy.ndarray>: samples (scores) of the test set
+            - y_true <numpy.ndarray>: true labels of the test set
+            - y_pred <numpy.ndarray>: predicted labels for the test set
+            - race_test <numpy.ndarray>: indicator of the group/race (Black is 0 and White it 1)
+        Returns:
+            - di_black <float>: DI for group Black
+            - di_white <float>: DI for group White
+    """
+
+    reward = 75 # TPs --> score increase by 75
+    penalty = -150 # FPs --> score drop of 150
     # TNs and FNs do not change (in this case)
-    # Delayed Impact (DI) is the average score change of each group
-    # In race_test array, Black is 0 and White it 1
+    # bounds
+    up_bound = 850
+    low_bound = 300
 
     di_black, di_white = 0, 0
     score_diff_black, score_diff_white = [], []
@@ -70,28 +101,28 @@ def calculate_delayed_impact(X_test, y_true, y_pred, race_test):
     for index, true_label in enumerate(y_true):
         # check for TPs
         if true_label == y_pred[index] and true_label==1:
-            new_score = X_test[index][0] + 75
+            new_score = X_test[index][0] + reward
             if race_test[index] == 0:  # black borrower
-                if new_score >= 850:
-                    score_diff_black.append(850-X_test[index][0])
+                if new_score >= up_bound:
+                    score_diff_black.append(up_bound-X_test[index][0])
                 else:
                     score_diff_black.append(new_score - X_test[index][0])
             elif race_test[index] == 1:  # white borrower
-                if new_score > 850:
-                    score_diff_white.append(850-X_test[index][0])
+                if new_score > up_bound:
+                    score_diff_white.append(up_bound-X_test[index][0])
                 else:
                     score_diff_white.append(new_score - X_test[index][0])
         # check for FPs
         elif true_label == 0 and y_pred[index] == 1:
-            new_score = X_test[index][0] - 150
+            new_score = X_test[index][0] + penalty
             if race_test[index] == 0:  # black borrower
-                if new_score < 300:
-                    score_diff_black.append(300-X_test[index][0])
+                if new_score < low_bound:
+                    score_diff_black.append(low_bound-X_test[index][0])
                 else:
                     score_diff_black.append(new_score - X_test[index][0])
             elif race_test[index] == 1:  # white borrower
-                if new_score < 300:
-                    score_diff_white.append(300-X_test[index][0])
+                if new_score < low_bound:
+                    score_diff_white.append(low_bound-X_test[index][0])
                 else:
                     score_diff_white.append(new_score - X_test[index][0])
         elif (true_label == y_pred[index] and true_label == 0) or (true_label == 1 and y_pred[index] == 0):
@@ -99,7 +130,6 @@ def calculate_delayed_impact(X_test, y_true, y_pred, race_test):
                 score_diff_black.append(0)
             elif race_test[index] == 1:  # white indiv
                 score_diff_white.append(0)
-
 
     # calculate mean score difference or delayed impact of each group
     di_black = sum(score_diff_black)/len(score_diff_black)
@@ -109,7 +139,18 @@ def calculate_delayed_impact(X_test, y_true, y_pred, race_test):
     #print('The average delayed impact of the white group is: ', di_white)
     return di_black, di_white
 
+
 def get_selection_rates(y_true, y_pred, sensitive_features, type_index):
+    """
+    ...
+        Args:
+            - y_true <numpy.ndarray>: true labels of the test set
+            - y_pred <numpy.ndarray>: predicted labels for the test set
+            - sensitive_features <>:
+            - type_index <int>: indicator if overall selection rate (0) or by group (1)
+        Returns:
+            - sr_return <numpy.ndarray>:
+    """
     sr_mitigated = MetricFrame(metrics=selection_rate, y_true=y_true, y_pred=y_pred,
                                sensitive_features=sensitive_features)
     sr_return = -1
@@ -125,6 +166,19 @@ def get_selection_rates(y_true, y_pred, sensitive_features, type_index):
 
 
 def evaluation_outcome_rates(y_true, y_pred, sample_weight):
+    """
+    Camputing and and printing of numerous outcome rates.
+        Args:
+            - y_true <numpy.ndarray>: true labels of the test set
+            - y_pred <numpy.ndarray>: predicted labels for the test set
+            - sample_weight <>:
+        Returns:
+            - tnr <>:
+            - tpr <>:
+            - fner <>:
+            - fper <>:
+    """
+
     tnr = true_negative_rate(y_true, y_pred, pos_label=1, sample_weight=sample_weight)
     #print('TNR=TN/(TN+FP)= ', tnr)
     tpr = true_positive_rate(y_true, y_pred, pos_label=1, sample_weight=sample_weight)
@@ -135,11 +189,13 @@ def evaluation_outcome_rates(y_true, y_pred, sample_weight):
     #print('FPER=FP/(FP+TN)= ', fper)
     return tnr, tpr, fner, fper
 
+
 def tpr_diff(y_true, y_pred, sensitive_features, sample_weight=None):
     tpr = MetricFrame(metrics=true_positive_rate, y_true=y_true, y_pred=y_pred, sensitive_features=sensitive_features,
                       sample_params={'sample_weight': sample_weight})
     result = tpr.difference()
     return result
+
 
 def fpr_diff(y_true, y_pred, sensitive_features, sample_weight=None):
     fpr = MetricFrame(metrics=false_positive_rate, y_true=y_true, y_pred=y_pred, sensitive_features=sensitive_features,
@@ -147,12 +203,26 @@ def fpr_diff(y_true, y_pred, sensitive_features, sample_weight=None):
     result = fpr.difference()
     return result
 
+
 def er_diff(y_true, y_pred, sensitive_features):
     result = MetricFrame(metrics=accuracy_score, y_true=y_true, y_pred=y_pred, sensitive_features=sensitive_features).difference(method='between_groups')
     return result
 
+
 # Resource for below: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html
 def get_f1_scores(y_test, y_predict):
+    """
+    Calculation of f1-scores.
+    # Resource for below: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html
+        Args:
+            - y_test <numpy.ndarray>: true labels of the test set
+            - y_predict <numpy.ndarray>: predicted labels for the test set
+        Returns:
+            - f1_micro <>:
+            - f1_weighted <>:
+            - f1_binary <>:
+    """
+
     # F1 score micro: calculate metrics globally by counting the total true positives, false negatives and false positives
     #print('F1 score micro: ')
     f1_micro = f1_score(y_test, y_predict, average='micro')
@@ -169,8 +239,16 @@ def get_f1_scores(y_test, y_predict):
     return f1_micro, f1_weighted, f1_binary
 
 
-def analysis(y_test, y_pred, sample_weights, print_statement):
-    #print(#print_statement)
+def analysis(y_test, y_pred, sample_weights):
+    """
+    Calculation of numerous model results: confusion matrix, accuracy, f1-scores, outcome rates and returning its rounded values.
+        Args:
+            - y_test <numpy.ndarray>: true labels of the test set
+            - y_pred <numpy.ndarray>: predicted labels for the test set
+            - sample_weights <>:
+        Returns:
+            Numerour rounded variables, cumputed below.
+    """
     conf_matrix = confusion_matrix(y_test, y_pred)
     results_dict = classification_report(y_test, y_pred, output_dict=True)
     #print(classification_report(y_test, y_pred))
@@ -181,6 +259,18 @@ def analysis(y_test, y_pred, sample_weights, print_statement):
 
 
 def evaluation_by_race(X_test, y_test, race_test, y_predict, sample_weight):
+    """
+    Splits the data into race and computes evaluation for each race.
+        Args:
+            - X_test <numpy.ndarray>: samples(scores) of the test set
+            - y_test <numpy.ndarray>: true labels of the test set
+            - race test <numpy.ndarray>: race indicator for samples in the test set
+            - y_predict <numpy.ndarray>: predicted labels for the test set
+            - sample_weight <>:
+        Returns:
+            - results_black <>: eval results for group/race black
+            - results_white <>: eval results for group/race white
+    """
     y_test_black, y_pred_black, sw_black, y_test_white, y_pred_white, sw_white = [], [], [], [], [], []
 
     # splitting up the y_test and y_pred values by race to then use for race specific classification reports
@@ -205,11 +295,25 @@ def evaluation_by_race(X_test, y_test, race_test, y_predict, sample_weight):
     di_black, di_white = calculate_delayed_impact(X_test, y_test, y_predict, race_test)
     results_black = [accuracy_black, cs_m_black, f1_m_black, f1_w_black, f1_b_black, sr_black, tnr_black, tpr_black, fner_black, fper_black, round(di_black, 2)]
     results_white = [accuracy_white, cs_m_white, f1_m_white, f1_w_white, f1_b_white, sr_white, tnr_white, tpr_white, fner_white, fper_white, round(di_white, 2)]
+
     return results_black, results_white
 
 
 def evaluating_model(constraint_str,X_test,y_test, y_pred, sample_weight_test,race_test):
-
+    """
+    Wrapper function which returns the eval results overall and by race
+        Args:
+            - constraint_str <numpy.ndarray>: true labels of the test set
+            - X_test <numpy.ndarray>: samples(scores) of the test set
+            - y_test <numpy.ndarray>: true labels of the test set
+            - y_pred <numpy.ndarray>: predicted labels for the test set
+            - sample_weight_test <>:
+            - race test <numpy.ndarray>: race indicator for samples in the test set
+        Returns:
+            - results_overall <>:
+            - results_black <>:
+            - results_white <>:
+    """
     overall_message = 'Evaluation of '+ constraint_str + '-constrained classifier overall:'
     accuracy, cs_matrix, f1_micro, f1_weighted, f1_binary, tnr, tpr, fner, fper = analysis(y_test, y_pred, sample_weight_test, overall_message)
     sr = get_selection_rates(y_test, y_pred, race_test, 0)
