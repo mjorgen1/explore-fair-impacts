@@ -1,0 +1,35 @@
+
+data_path: 'data/synthetic42/Demo-0_Repay-0.csv'
+results_dir: 'data/results/synthetic_origTestSet/00/'
+weight_idx: 1
+testset_size: 0.3
+demo_ratio:
+  - #Training
+    - 0 #Black
+    - 0 #White
+  - #Testing
+    - 0.12 #Black
+    - 0.88 #White
+  #Testing
+label_ratio: # For Group Black
+  - 0 #False 0
+  - 0 #True 1
+balance_test_set:  2 # 1= balanced testset 0= default 2= original distribution
+set_bound:
+  - 70000
+  - 30000
+models:
+  Decision Tree: 'dt'
+  Gaussian Naive Bayes: 'gnb'
+  Logistic Regression: 'lgr'
+  Gradient_Boosted_Trees: 'gbt'
+constraints:
+  Demografic Parity: 'DP'
+  Equalized Odds: 'EO'
+  Equality of Opportunity: 'TPRP'
+  False Positive Rate Parity: 'FPRP'
+  Error Rate Parity: 'ERP'
+reduction_algorithms:
+  Exponential Gradient: 'EG'
+  Grid Search: 'GS'
+save: True

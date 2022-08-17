@@ -166,34 +166,39 @@ def adjust_set_ratios(x_data, y_data, label_ratio, race_ratio, set_size_upper_bo
     """
     # Black = 0; White = 1
     # limits the absolute test_size if necessary
-    if len(np.where(x_data[:, 2] == 0)[0]) > set_size_upper_bound * race_ratio[0]:
-        set_size_0 = set_size_upper_bound * race_ratio[0]
+    if len(y_data) > set_size_upper_bound:
+        set_size = set_size_upper_bound
     else:
-        set_size_0 = len(np.where(x_data[:, 2] == 0)[0])
+        set_size = len(y_data)
 
-    if len(np.where(x_data[:, 2] == 1)[0]) > set_size_upper_bound * race_ratio[1]:
-        set_size_1 = set_size_upper_bound * race_ratio[1]
-    else:
-        set_size_1 = len(np.where(x_data[:, 2] == 0)[0])
+    num_0 = int(set_size * race_ratio[0])
+    num_1 = int(set_size * race_ratio[1])
 
     # number of samples for the Black group, according to the label ratio
-    num_0P = int(set_size_0 * label_ratio[1])
-    num_0N = int(set_size_0 * label_ratio[0])
-    num_1 = int(set_size_1)
+    num_0P = int(num_0 * label_ratio[1])
+    num_0N = int(num_0 * label_ratio[0])
 
     # getting the indices of each samples for each group
-    idx_0N = np.where((x_data[:, 2] == 0) & (y_data == 0))[0]
-    idx_0P = np.where((x_data[:, 2] == 0) & (y_data == 1))[0]
+    idx_0N = np.where((x_data[:, 1] == 0) & (y_data == 0))[0]
+    idx_0P = np.where((x_data[:, 1] == 0) & (y_data == 1))[0]
 
-    idx_1 = np.where(x_data[:, 2] == 1)[0]
+    idx_1 = np.where(x_data[:, 1] == 1)[0]
 
     # if group size numbers are larger than the available samples for that group adjust it
     if len(idx_0P) < num_0P:
         num_0P = len(idx_0P)
         num_0N = int(num_0P/label_ratio[1] * label_ratio[0])
+        num_1 = int((num_0N + num_0P)/race_ratio[0] * race_ratio[1])
     if len(idx_0N) < num_0N:
         num_0N = len(idx_0N)
         num_0P = int(num_0N/label_ratio[0] * label_ratio[1])
+        num_1 = int((num_0N + num_0P)/race_ratio[0] * race_ratio[1])
+    if len(idx_1) < num_1:
+        num_1 = len(idx_1)
+        num_0P =  int(num_1/race_ratio[1] * race_ratio[0] * label_ratio[1])
+        num_0N =  int(num_1/race_ratio[1] * race_ratio[0] * label_ratio[0])
+    # adjusting racio distrubution as well
+
 
     # take the amount of samples, by getting the amount of indices
     idx_0N = idx_0N[:num_0N]
@@ -203,6 +208,7 @@ def adjust_set_ratios(x_data, y_data, label_ratio, race_ratio, set_size_upper_bo
     idx = sorted(np.concatenate((idx_0N,idx_0P,idx_1)))
 
     return x_data[idx,:], y_data[idx]
+
 
 
 def sample(group_size_ratio, order_of_magnitude, shuffle_seed,scores_arr, pi_A, pi_B, repay_A_arr, repay_B_arr):

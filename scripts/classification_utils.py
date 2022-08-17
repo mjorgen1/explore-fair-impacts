@@ -47,44 +47,124 @@ def get_data(file):
     #print(data)
     return data
 
-
-def adjust_train_set_ratios(x_data, y_data, label_ratio, race_ratio, train_set_bound):
-
-    if len(np.where(x_data[:, 1] == 0)[0]) > train_set_bound * race_ratio[0]:
-        set_size_0 = train_set_bound * race_ratio[0]
+def adjust_set_ratios(x_data, y_data, label_ratio, race_ratio, set_size_upper_bound):
+    """
+    Changes the proportions of samples in the set. Proportion of each group (race) and proportion of labels for the Black (0) group.
+        Args:
+            - x_data <numpy.ndarray>: ['score','repay_probability','race'] -> array of samples
+            - y_data <numpy.ndarray>: ['repay_indices'] -> array of samples
+            - label_ratio <list<float>>: contains two 2 floats between 0 and 1 (sum = 1), representing the ratio of samples with each labels for the black group (False,True)
+            - race_ratio <list<float>>: contains two 2 floats between 0 and 1 (sum = 1), representing the ratio of black to white samples generated (Black,White)
+            - set_size_upper_bound <int>: absolute upper bound of the size for the dataset (e.g 100,000)
+        Returns:
+            subset of x_data and y_data
+    """
+    # Black = 0; White = 1
+    # limits the absolute test_size if necessary
+    if len(y_data) > set_size_upper_bound:
+        set_size = set_size_upper_bound
     else:
-        print('problem')
-        set_size_0 = len(np.where(x_data[:, 1] == 0)[0])
+        set_size = len(y_data)
 
-    if len(np.where(x_data[:, 1] == 1)[0]) > train_set_bound * race_ratio[1]:
-        set_size_1 = train_set_bound * race_ratio[1]
-    else:
-        print('problem')
-        set_size_1 = len(np.where(x_data[:, 1] == 0)[0])
+    num_0 = int(set_size * race_ratio[0])
+    num_1 = int(set_size * race_ratio[1])
 
-    num_0P = int(set_size_0 * label_ratio[1])
-    num_0N = int(set_size_0 * label_ratio[0])
-    num_1 = int(set_size_1)
+    # number of samples for the Black group, according to the label ratio
+    num_0P = int(num_0 * label_ratio[1])
+    num_0N = int(num_0 * label_ratio[0])
 
+    # getting the indices of each samples for each group
     idx_0N = np.where((x_data[:, 1] == 0) & (y_data == 0))[0]
     idx_0P = np.where((x_data[:, 1] == 0) & (y_data == 1))[0]
 
     idx_1 = np.where(x_data[:, 1] == 1)[0]
 
+    # if group size numbers are larger than the available samples for that group adjust it
     if len(idx_0P) < num_0P:
         num_0P = len(idx_0P)
         num_0N = int(num_0P/label_ratio[1] * label_ratio[0])
     if len(idx_0N) < num_0N:
         num_0N = len(idx_0N)
         num_0P = int(num_0N/label_ratio[0] * label_ratio[1])
+    # adjusting racio distrubution as well
+    num_1 = (len(num_0N) + len(num_0P))/race_ratio[0] * race_ratio[1]
 
+    # take the amount of samples, by getting the amount of indices
     idx_0N = idx_0N[:num_0N]
     idx_0P = idx_0P[:num_0P]
     idx_1 = idx_1[:num_1]
+    # concatenate indices
     idx = sorted(np.concatenate((idx_0N,idx_0P,idx_1)))
 
     return x_data[idx,:], y_data[idx]
+def create_original_set_ratios(x_data, y_data, race_ratio, set_size_upper_bound):
+    """
+    Changes the proportions of samples in the set. Proportion of each group (race) and proportion of labels for the Black (0) group.
+        Args:
+            - x_data <numpy.ndarray>: ['score','repay_probability','race'] -> array of samples
+            - y_data <numpy.ndarray>: ['repay_indices'] -> array of samples
+            - race_ratio <list<float>>: contains two 2 floats between 0 and 1 (sum = 1), representing the ratio of black to white samples generated (Black,White)
+            - set_size_upper_bound <int>: absolute upper bound of the size for the dataset (e.g 100,000)
+        Returns:
+            subset of x_data and y_data
+    """
+    # Black = 0; White = 1
+    # limits the absolute test_size if necessary
 
+    if len(y_data) > set_size_upper_bound:
+        set_size = set_size_upper_bound
+    else:
+        set_size = len(y_data)
+    # set set sizes for each race
+    set_size_0 = int(set_size * race_ratio[0])
+    set_size_1 = int(set_size * race_ratio[1])
+
+    # number of samples for the Black group, according to the label ratio
+    num_0P = int(set_size_0 * 0.34)
+    num_0N = int(set_size_0 * 0.66)
+    num_1P = int(set_size_1 * 0.76)
+    num_1N = int(set_size_1 * 0.24)
+
+    # getting the indices of each samples for each group
+    idx_0N = np.where((x_data[:, 1] == 0) & (y_data == 0))[0]
+    idx_0P = np.where((x_data[:, 1] == 0) & (y_data == 1))[0]
+    idx_1N = np.where((x_data[:, 1] == 1) & (y_data == 0))[0]
+    idx_1P = np.where((x_data[:, 1] == 1) & (y_data == 1))[0]
+
+    idx_1 = np.where(x_data[:, 1] == 1)[0]
+
+    # if group size numbers are larger than the available samples for that group adjust it
+    if len(idx_0P) < num_0P:
+        num_0P = len(idx_0P)
+        num_0N = int(num_0P/0.34 * 0.66)
+        num_1P =  int((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * 0.76)
+        num_1N =  int((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * 0.24)
+    if len(idx_0N) < num_0N:
+        num_0N = len(idx_0N)
+        num_0P = int(num_0N/0.66 * 0.34)
+        num_1P =  int((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * 0.76)
+        num_1N =  int((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * 0.24)
+    if len(idx_1P) < num_1P:
+        num_1P = len(idx_1P)
+        num_1N = int(num_1P/0.76 * 0.24)
+        num_0P =  int((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * 0.34)
+        num_0N =  int((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * 0.66)
+    if len(idx_1N) < num_1N:
+        num_1N = len(idx_1N)
+        num_1P = int(num_1N/0.24 * 0.76)
+        num_0P =  int((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * 0.34)
+        num_0N =  int((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * 0.66)
+
+
+    # take the amount of samples, by getting the amount of indices
+    idx_0N = idx_0N[:num_0N]
+    idx_0P = idx_0P[:num_0P]
+    idx_1N = idx_1N[:num_1N]
+    idx_1P = idx_1P[:num_1P]
+    # concatenate indices
+    idx = sorted(np.concatenate((idx_0N,idx_0P,idx_1N,idx_1P)))
+
+    return x_data[idx,:], y_data[idx]
 
 def adjust_test_set_ratios(x_data, y_data, race_ratio, balance_test_set, test_set_bound):
 
@@ -103,21 +183,6 @@ def adjust_test_set_ratios(x_data, y_data, race_ratio, balance_test_set, test_se
         idx_1P = idx_1P[:num]
 
         idx = sorted(np.concatenate((idx_0N,idx_0P,idx_1N,idx_1P)))
-    else:
-        if len(np.where(x_data[:, 1] == 0)[0]) > test_set_bound * race_ratio[0]:
-            set_size_0 = test_set_bound * race_ratio[0]
-        else:
-            set_size_0 = len(np.where(x_data[:, 1] == 0)[0])
-
-        if len(np.where(x_data[:, 1] == 1)[0]) > test_set_bound * race_ratio[1]:
-            set_size_1 = test_set_bound * race_ratio[1]
-        else:
-            set_size_1 = len(np.where(x_data[:, 1] == 0)[0])
-        idx_0 = np.where(x_data[:, 1] == 0)[0]
-        idx_1 = np.where(x_data[:, 1] == 1)[0]
-        idx_0 = idx_0[:int(set_size_0)]
-        idx_1 = idx_1[:int(set_size_1)]
-        idx = sorted(np.concatenate((idx_0,idx_1)))
 
     return x_data[idx,:], y_data[idx]
 
@@ -148,7 +213,11 @@ def prep_data(data, test_size, demo_ratio,label_ratio,balance_test_set, set_boun
     #print_type_ratios(X_train,y_train)
 
     #print_type_ratios(X_test,y_test)
-    X_test, y_test = adjust_test_set_ratios(X_test, y_test,demo_ratio[1],balance_test_set, set_bound[1])
+    if balance_test_set == 1:
+        X_test, y_test = adjust_test_set_ratios(X_test, y_test,demo_ratio[1],balance_test_set, set_bound[1])
+    if balance_test_set == 2:
+        X_test, y_test = create_original_set_ratios(X_test, y_test, demo_ratio[1], set_bound[1])
+
     print('Testing set:', len(y_test))
     print_type_ratios(X_test,y_test)
 
@@ -227,7 +296,7 @@ def get_classifier(model_name):
 
 def get_constraint(constraint_str):
   #set seed for consistent results with ExponentiatedGradient
-   np.random.seed(0)
+   #np.random.seed(0)
    if constraint_str == 'DP':
        constraint = DemographicParity()
    elif constraint_str == 'EO':
@@ -265,7 +334,7 @@ def get_new_scores(X_test, y_predict, y_test, race_test):
 
     for index, label in enumerate(y_predict):
 
-        # first check for TP or FP
+        # first check for TP or TP
         if label == 1 and y_test[index] == 1:  # if it's a TP
             if race_test[index] == 0:  # black
                 black_types.append('TP')
