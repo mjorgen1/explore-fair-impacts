@@ -24,10 +24,10 @@ Our simulated datasets are based on Hardt et al.'s 2016 dataset.
 - Then run: ```delayedimpact/Liu_paper_code/FICO-figures.ipynb```
 
 # Repo Structure
-  Files:
+ - Files:
     - requirements.txt contains the required python packages for the project
     - create_data.py, classification.py, pipeline.py -> run from cmd line
-  Folder:
+ - Folder:
     - Liu_paper_code: contains the forged code from https://github.com/lydiatliu/delayedimpact (indirectly used for data collection)
     - scripts: contais all functions used for data collection, classification, evaluation and visualisations (stored in seperate py files)
     - configs: contains yaml files, which entail configurations for data collection and classification from cmd line
