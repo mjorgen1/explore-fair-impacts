@@ -66,7 +66,7 @@ This section prepares the simulated (potentially synthetic) dataset that will be
 - The ```delayedimpact/scripts/data_creation_utils.py``` is the pyfile that includes all of the helpful functions for the data collection
 - How to run:
   - Way 1: Run the notebook (```delayedimpact/notebooks/simData_collection```) and set params in the third cell
-  - Way 2: Set params in ```configs/data_creation``` and run ```python create_data.py``` from any cmd line.
+  - Way 2: Set params in ```configs/data_creation``` or create your own .yaml file in the folder and run ```python create_data.py -config data_creation``` from any cmd line (you can substitude the -config parameter with your own yaml-file name).
 
 
 ## 2. Training and Testing ML Models
@@ -93,7 +93,7 @@ This section trains ML models on the simulated data and trains unmitigated and m
 - The ```delayedimpact/scripts/classification_utils.py``` and ```delayedimpact/scripts/evaluation_utils.py``` are the pyfiles that include all of the helpful functions for the classification.
 - How to run:
   - Way 1: Run the notebook (```delayedimpact/notebooks/simData_classification```) and set params in the second cell
-  - Way 2: Set params in ```configs/classification``` and run ```python classification.py``` from any cmd line.
+  - Way 2: Set params in ```configs/classification``` or create your own .yaml file in the folder and run ```python classification.py -config classification``` from any cmd line (you can substitude the -config parameter with your own yaml-file name).
 
 
 ## 3. Performing statistical analyses on results
