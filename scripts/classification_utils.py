@@ -366,9 +366,18 @@ def classify(data_path,results_dir,weight_idx,testset_size,demo_ratio,label_rati
     warnings.filterwarnings('ignore', category=FutureWarning)
     # Load and Prepare data
     data = get_data(data_path)
+    x = data[['score', 'race']].values
+    y = data['repay_indices'].values
+
 
     X_train, X_test, y_train, y_test, race_train, race_test, sample_weight_train, sample_weight_test = prep_data(data, testset_size,demo_ratio, label_ratio,balance_test_set,set_bound, weight_idx)
 
+    visual_scores_by_race(results_dir,'all',x)
+    visual_repay_dist(results_dir,'all',x,y)
+    visual_scores_by_race(results_dir,'train',X_train)
+    visual_scores_by_race(results_dir,'test',X_test)
+    visual_repay_dist(results_dir,'train',X_train, y_train)
+    visual_repay_dist(results_dir,'test',X_test,y_test)
     # split up X_test by race
     X_test_b = []
     X_test_w = []

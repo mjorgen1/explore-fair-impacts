@@ -69,8 +69,7 @@ def visual_scores_by_race(path,fname,x):
     axs[0].set_ylabel('No. of Individuals')
     axs[1].set_title('White Group')
     axs[1].hist(white_credit_dist, bins=n_bins)
-    plt.savefig(f'{fname}_demo_distr.png')
-    plt.show()
+    plt.savefig(f'{path}{fname}_demo_distr.png')
 
 
 def visual_repay_dist(path,fname,x,y):
@@ -105,8 +104,8 @@ def visual_repay_dist(path,fname,x,y):
     axs[1].set_xticklabels(['Default','Repay'])
     axs[1].hist(white_label_dist, bins=n_bins)
     axs[1].set_title('White Group')
-    plt.savefig(f'{fname}_label_distr.png')
-    plt.show()
+    plt.savefig(f'{path}{fname}_label_distr.png')
+
 
 
 def update_model_perf_dict(sweep, models_dict, sweep_preds, sweep_scores, non_dominated, decimal, y_test, race_test, model_name):
@@ -241,5 +240,4 @@ def impact_bar_plots(data_path, b_or_w = 'Black',folders= ['dt','lgr','gbt','gnb
         #legend
         ax.legend(handles=[black_patch,blue_patch,cyan_patch], bbox_to_anchor=(0,1.02,1,0.2), loc="lower left",mode="expand", borderaxespad=0, ncol=3)
 
-        plt.savefig(f'{folders[i]}_{b_or_w}_DI.png')
-    plt.show()
+        plt.savefig(f'{data_path}{folders[i]}/{b_or_w}_DI.png')
