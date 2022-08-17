@@ -52,7 +52,7 @@ This section prepares the simulated (potentially synthetic) dataset that will be
   - directory of the raw data from Hardt et al. (2016)
   - directory for the created synthetic dataset
   - filename of the created dataset
- - Can be changed:
+- Can be changed:
   - set_size: absolute size of the dataset (number of samples)
   - group_size_ratio: ratio of race in the dataset (black to white samples)
   - black_label_ratio: ratio of balck samples with true and false labels.
@@ -77,8 +77,8 @@ This section trains ML models on the simulated data and trains unmitigated and m
 - Need to be set:
   - datapath to the dataset created in Stage1
   - directory for saving the results for the models
- - Can be changed:
-   - weight_idx:
+- Can be changed:
+  - weight_idx:
   - testset_size: absolute size of the dataset (number of samples)
   - demo_ratio: ratio of race in the dataset (black to white samples)
   - label_ratio: ratio of black samples with true and false labels.
