@@ -179,10 +179,10 @@ def adjust_set_ratios(x_data, y_data, label_ratio, race_ratio, set_size_upper_bo
     num_0N = int(num_0 * label_ratio[0])
 
     # getting the indices of each samples for each group
-    idx_0N = np.where((x_data[:, 1] == 0) & (y_data == 0))[0]
-    idx_0P = np.where((x_data[:, 1] == 0) & (y_data == 1))[0]
+    idx_0N = np.where((x_data[:, 2] == 0) & (y_data == 0))[0]
+    idx_0P = np.where((x_data[:, 2] == 0) & (y_data == 1))[0]
 
-    idx_1 = np.where(x_data[:, 1] == 1)[0]
+    idx_1 = np.where(x_data[:, 2] == 1)[0]
 
     # if group size numbers are larger than the available samples for that group adjust it
     if len(idx_0P) < num_0P:
@@ -226,7 +226,6 @@ def sample(group_size_ratio, order_of_magnitude, shuffle_seed,scores_arr, pi_A, 
         Returns:
             - data_all_df_shuffled <pd.DataFrame>: shuffled dataFrame
     """
-
     num_A_samples = int(group_size_ratio[0] * order_of_magnitude)
     num_B_samples = int(group_size_ratio[1] * order_of_magnitude)
 
@@ -339,7 +338,7 @@ def load_sample_and_save(data_dir, result_path, order_of_magnitude, group_size_r
         data = pd.DataFrame(df)
 
     # print proportions of dataset
-    print(i,'Black N/P:',len(idx_An),'/',len(idx_Ap),'White:',len(idx_B))
+        print(i,'Black N/P:',len(idx_An),'/',len(idx_Ap),'White:',len(idx_B))
 
     #Save pandas Dataframes in CSV
     data.to_csv(index=False, path_or_buf=result_path)

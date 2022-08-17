@@ -1,5 +1,5 @@
 
-data_path: 'data/synthetic42/Demo-0_Repay-0.csv'
+data_path: 'data/synthetic42_2/Demo-0_Repay-0.csv'
 results_dir: 'data/results/synthetic_origTestSet/00/'
 weight_idx: 1
 testset_size: 0.3
@@ -8,8 +8,8 @@ demo_ratio:
     - 0 #Black
     - 0 #White
   - #Testing
-    - 0.12 #Black
-    - 0.88 #White
+    - 0.0 #Black
+    - 0.0 #White
   #Testing
 label_ratio: # For Group Black
   - 0 #False 0
