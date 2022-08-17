@@ -47,7 +47,7 @@ Stage 1 and 2 of the pipeline can be eiher run via notebook or via cmd line. The
 
 This section prepares the simulated (potentially synthetic) dataset that will be used for training and testing the unmitigated and mitigated models. 
 
-** Parameters**:
+**Parameters**:
 - Need to be set:
   - directory of the raw data from Hardt et al. (2016)
   - directory for the created synthetic dataset
@@ -73,7 +73,7 @@ This section prepares the simulated (potentially synthetic) dataset that will be
 
 This section trains ML models on the simulated data and trains unmitigated and mitigated models on it for comparison. 
 
-** Parameters**:
+**Parameters**:
 - Need to be set:
   - datapath to the dataset created in Stage1
   - directory for saving the results for the models
@@ -117,6 +117,7 @@ This work is under construction.
 <!-- CONTACT -->
 ## Contact
 * Mackenzie Jorgensen - mackenzie.jorgensen@kcl.ac.uk
+* Hannah Richert - hrichert@ous.de
 
 <!-- ACKNOWLEDGEMENTS -->
 ## Acknowledgments
