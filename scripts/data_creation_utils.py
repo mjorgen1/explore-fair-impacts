@@ -322,7 +322,8 @@ def load_sample_and_save(data_dir, result_path, order_of_magnitude, group_size_r
     while len(y) < set_size:
         i += 1
         # Generate new samples
-        data = sample(group_size_ratio, order_of_magnitude*i,shuffle_seed, scores_arr, pi_A, pi_B, repay_A_arr, repay_B_arr)
+        data_add = sample(group_size_ratio, order_of_magnitude,i, scores_arr, pi_A, pi_B, repay_A_arr, repay_B_arr)
+        data = pd.concat([data,data_add])
 
         # split the data cols (x,y)
         x = data[['score','repay_probability', 'race']].values

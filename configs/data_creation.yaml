@@ -1,13 +1,13 @@
 
 data_dir: 'data/raw/'
-result_path: 'data/synthetic42_2/Demo-u_Repay-b.csv'
+result_path: 'data/synthetic_ds/Demo-o_Repay-o.csv'
 order_of_magnitude: 100000
 group_size_ratio:
-  - 0.34 #black
-  - 0.66 #white
+  - 0.88 #black
+  - 0.12 #white
 black_label_ratio:
-  - 0.5 #0
-  - 0.5 #1
+  - 0.34 #0
+  - 0.66 #1
 set_size: 100000
 round_num_scores: 2
 shuffle_seed: 42
