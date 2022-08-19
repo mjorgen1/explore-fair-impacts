@@ -1,6 +1,6 @@
 
-data_path: 'data/synthetic_ds/Demo-0_Repay-0.csv'
-results_dir: 'results/synthetic_balTestSet/00/'
+data_path: 'data/synthetic_ds/Demo-i_Repay-0.csv'
+results_dir: 'results/synthetic_rawTestSet/i0/'
 weight_idx: 1
 testset_size: 0.3
 demo_ratio: 'Unrelevant'
@@ -14,7 +14,7 @@ demo_ratio: 'Unrelevant'
 label_ratio: 'unrelevant' # For Group Black
 #  - 0 #False 0
 #  - 0 #True 1
-test_set_variant: 1 # 1= balanced testset 0= default 2= original,true FICO distribution
+test_set_variant: 0 # 1= balanced testset 0= default 2= original,true FICO distribution
 set_bound:
   - 70000
   - 30000

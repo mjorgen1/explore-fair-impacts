@@ -144,7 +144,7 @@ def print_type_ratios(x_data,y_data):
     print('Black N/P:',len(idx_0N),'/',len(idx_0P),'White N/P:',len(idx_1N),'/',len(idx_1P))
 
 
-def prep_data(data, test_size, demo_ratio,label_ratio,balance_test_set, set_bound,weight_index):
+def prep_data(data, test_size, demo_ratio,label_ratio,test_set_variant, set_bound,weight_index):
     # might need to include standardscaler here
 
     x = data[['score', 'race']].values
@@ -162,9 +162,9 @@ def prep_data(data, test_size, demo_ratio,label_ratio,balance_test_set, set_boun
     #print_type_ratios(X_train,y_train)
 
     #print_type_ratios(X_test,y_test)
-    if balance_test_set == 1:
+    if test_set_variant == 1:
         X_test, y_test = balance_test_set_ratios(X_test, y_test, set_bound[1])
-    if balance_test_set == 2:
+    if test_set_variant == 2:
         X_test, y_test = create_original_set_ratios(X_test, y_test, [0.12,0.88], set_bound[1])
 
     print('Testing set:', len(y_test))
@@ -379,7 +379,7 @@ def add_constraint(model, constraint_str, reduction_alg, X_train, y_train, race_
     return mitigator, results_overall, results_black, results_white, y_pred_mitigated
 
 
-def classify(data_path,results_dir,weight_idx,testset_size,demo_ratio,label_ratio, balance_test_set, set_bound, models,constraints,reduction_algorithms,save):
+def classify(data_path,results_dir,weight_idx,testset_size,demo_ratio,label_ratio, test_set_variant, set_bound, models,constraints,reduction_algorithms,save):
 
     warnings.filterwarnings('ignore', category=FutureWarning)
     # Load and Prepare data
@@ -388,7 +388,7 @@ def classify(data_path,results_dir,weight_idx,testset_size,demo_ratio,label_rati
     y = data['repay_indices'].values
 
 
-    X_train, X_test, y_train, y_test, race_train, race_test, sample_weight_train, sample_weight_test = prep_data(data, testset_size,demo_ratio, label_ratio,balance_test_set,set_bound, weight_idx)
+    X_train, X_test, y_train, y_test, race_train, race_test, sample_weight_train, sample_weight_test = prep_data(data, testset_size,demo_ratio, label_ratio,test_set_variant,set_bound, weight_idx)
 
     visual_scores_by_race(results_dir,'all',x)
     visual_repay_dist(results_dir,'all',x,y)

@@ -32,7 +32,7 @@ def visualize_data_distribution(path,samples_A,samples_A_probs,samples_B,samples
 
     for data, color, group in zip(data, colors, groups):
         x, y = data
-        ax.plot(x, y, alpha=0.8, c=color, label=group)
+        ax.scatter(x, y, alpha=0.8, c=color, label=group)
 
     plt.title('Sample Distributions by Group')
     plt.legend(loc=2)

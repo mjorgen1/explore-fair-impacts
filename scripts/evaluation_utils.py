@@ -32,7 +32,7 @@ def inspect_MinMax(samples_A_probs,samples_B_probs):
 
 def print_fairness_metrics(y_true, y_pred, sensitive_features, sample_weight):
     """
-    Camputing and and printing of numerous dairness metrics.
+    Camputing and and printing of numerous fairness metrics.
         Args:
             - y_true <>:
             - y_pred <>:

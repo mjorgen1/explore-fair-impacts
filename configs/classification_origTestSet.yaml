@@ -1,20 +1,20 @@
 
-data_path: 'data/synthetic42_2/Demo-0_Repay-0.csv'
-results_dir: 'data/results/synthetic_origTestSet/00/'
+data_path: 'data/synthetic_ds/Demo-i_Repay-b.csv'
+results_dir: 'results/synthetic_origTestSet/ib/'
 weight_idx: 1
 testset_size: 0.3
-demo_ratio:
-  - #Training
-    - 0 #Black
-    - 0 #White
-  - #Testing
-    - 0.0 #Black
-    - 0.0 #White
+demo_ratio: 'Unrelevant'
+#  - #Training
+  #  - 0 #Black
+  #  - 0 #White
+#  - #Testing
+  #  - 0 #Black
+#    - 0 #White
   #Testing
-label_ratio: # For Group Black
-  - 0 #False 0
-  - 0 #True 1
-balance_test_set:  2 # 1= balanced testset 0= default 2= original distribution
+label_ratio: 'unrelevant' # For Group Black
+#  - 0 #False 0
+#  - 0 #True 1
+test_set_variant: 2 # 1= balanced testset 0= default 2= original,true FICO distribution
 set_bound:
   - 70000
   - 30000
