@@ -177,35 +177,48 @@ def adjust_set_ratios(x_data, y_data, label_ratio, race_ratio, set_size_upper_bo
     # number of samples for the Black group, according to the label ratio
     num_0P = int(num_0 * label_ratio[1])
     num_0N = int(num_0 * label_ratio[0])
+    num_1P = int(num_1 * 0.76)
+    num_1N = int(num_1 * 0.24)
 
     # getting the indices of each samples for each group
     idx_0N = np.where((x_data[:, 2] == 0) & (y_data == 0))[0]
     idx_0P = np.where((x_data[:, 2] == 0) & (y_data == 1))[0]
 
-    idx_1 = np.where(x_data[:, 2] == 1)[0]
+    idx_1N = np.where((x_data[:, 2] == 1) & (y_data == 0))[0]
+    idx_1P = np.where((x_data[:, 2] == 1) & (y_data == 1))[0]
 
     # if group size numbers are larger than the available samples for that group adjust it
     if len(idx_0P) < num_0P:
         num_0P = len(idx_0P)
         num_0N = int(num_0P/label_ratio[1] * label_ratio[0])
-        num_1 = int((num_0N + num_0P)/race_ratio[0] * race_ratio[1])
+        num_1P =  int((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * 0.76)
+        num_1N =  int((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * 0.24)
     if len(idx_0N) < num_0N:
         num_0N = len(idx_0N)
         num_0P = int(num_0N/label_ratio[0] * label_ratio[1])
         num_1 = int((num_0N + num_0P)/race_ratio[0] * race_ratio[1])
-    if len(idx_1) < num_1:
-        num_1 = len(idx_1)
-        num_0P =  int(num_1/race_ratio[1] * race_ratio[0] * label_ratio[1])
-        num_0N =  int(num_1/race_ratio[1] * race_ratio[0] * label_ratio[0])
+        num_1P =  int((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * 0.76)
+        num_1N =  int((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * 0.24)
+    if len(idx_1P) < num_1P:
+        num_1P = len(idx_1P)
+        num_1N = int(num_1P/0.76 * 0.24)
+        num_0P =  int((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * label_ratio[1])
+        num_0N =  int((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * label_ratio[0])
+    if len(idx_1N) < num_1N:
+        num_1N = len(idx_1N)
+        num_1P = int(num_1N/0.24 * 0.76)
+        num_0P =  int((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * label_ratio[1])
+        num_0N =  int((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * label_ratio[0])
     # adjusting racio distrubution as well
 
 
     # take the amount of samples, by getting the amount of indices
     idx_0N = idx_0N[:num_0N]
     idx_0P = idx_0P[:num_0P]
-    idx_1 = idx_1[:num_1]
+    idx_1N = idx_1N[:num_1N]
+    idx_1P = idx_1P[:num_1P]
     # concatenate indices
-    idx = sorted(np.concatenate((idx_0N,idx_0P,idx_1)))
+    idx = sorted(np.concatenate((idx_0N,idx_0P,idx_1N,idx_1P)))
 
     return x_data[idx,:], y_data[idx]
 
