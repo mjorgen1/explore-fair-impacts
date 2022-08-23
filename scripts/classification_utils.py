@@ -7,7 +7,7 @@ import warnings
 import yaml
 from yaml.loader import SafeLoader
 
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split,StratifiedKFold
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.naive_bayes import GaussianNB
@@ -21,7 +21,7 @@ from fairlearn.reductions import ExponentiatedGradient, GridSearch, DemographicP
 from fairlearn.metrics import *
 from raiwidgets import FairnessDashboard
 
-from scripts.evaluation_utils import evaluating_model
+from scripts.evaluation_utils_crossval import evaluating_model
 from scripts.visualization_utils import visual_repay_dist, visual_scores_by_race
 
 def load_args(file):
@@ -511,3 +511,228 @@ def classify(data_path,results_dir,weight_idx,testset_size,demo_ratio,label_rati
                 writer.writerow(scores_names)
                 writer.writerows(columns_data_types)
                 f.close()
+
+
+
+
+
+def average_results_dict(list_with_dicts):
+    for i,dict in enumerate(list_with_dicts):
+        print(i)
+        if i == 0:
+            results = pd.DataFrame(dict)
+        else:
+            second = pd.DataFrame(dict)
+            results = results.add(second, fill_value=0)
+    #results = {k: [x/len(list_with_dicts) for x in v] for k, v in results.items()}
+    #results = {k: [x for x in v] for k, v in results.items()}
+    results = results.div(len(list_with_dicts))
+    results = results.to_dict()
+    for k,v in results.items():
+        results[k] = list(v.values())
+    return results
+
+def average_score_lists(label_lists,value_lists):
+    label_list_flat = [item for sublist in label_lists for item in sublist]
+    value_lists_flat = [item for sublist in value_lists for item in sublist]
+    labels = set(label_list_flat)
+    results = []
+    result_l = []
+    for i,l in enumerate(labels):
+        idx = [i for i,label in enumerate(label_list_flat) if label==l]
+        v_lists = [value_lists_flat[i] for i in idx]
+        num = len(v_lists)
+        results.append([sum(x)/num for x in zip(*v_lists)])
+        result_l.append(l)
+    return results, result_l
+
+
+
+def classify_crossval(data_path,results_dir,weight_idx,testset_size,demo_ratio,label_ratio, test_set_variant, set_bound, models,constraints,reduction_algorithms,save):
+
+    warnings.filterwarnings('ignore', category=FutureWarning)
+    k = 3
+    # Load and Prepare data
+    data = get_data(data_path)
+    X = data[['score', 'race']].values
+    y = data['repay_indices'].values
+
+    #prep_data(data, testset_size,demo_ratio, label_ratio,test_set_variant,set_bound, weight_idx)
+    # might need to include standardscaler here
+
+    print(' Whole set:', len(y))
+    print_type_ratios(X,y)
+
+    skf = StratifiedKFold(n_splits=k)
+    for model_str in models.values():
+        print(model_str)
+        results_path = results_dir
+        results_path += f'{model_str}/'
+        os.makedirs(results_path, exist_ok=True)
+
+        # Reference: https://www.datacamp.com/community/tutorials/decision-tree-classification-python
+        # train unconstrained model
+        classifier = get_classifier(model_str)
+
+        overall_results_k = []
+        black_results_k = []
+        white_results_k = []
+        all_scores_k = []
+        #all_types_k = []
+        scores_names_k = []
+        k_counter = 0
+        for train_index, test_index in skf.split(X,y):
+            overall_results_dict = {}
+            black_results_dict = {}
+            white_results_dict = {}
+            all_scores = []
+            #all_types = []
+            scores_names = []
+            k_counter += 1
+            print(k_counter)
+
+            X_train, X_test = X[train_index,:], X[test_index,:]
+            y_train, y_test = y[train_index], y[test_index]
+            #print('Here are the x values: ', x, '\n')
+            #print('Here are the y values: ', y)
+            #print('Training set:', len(y_train))
+            #print_type_ratios(X_train,y_train)
+            #X_train, y_train = adjust_train_set_ratios(X_train, y_train, label_ratio, demo_ratio[0], set_bound[0])
+            #print('Training set:', len(y_train))
+            #print_type_ratios(X_train,y_train)
+
+            #print_type_ratios(X_test,y_test)
+            if test_set_variant == 1:
+                X_test, y_test = balance_test_set_ratios(X_test, y_test, set_bound[1])
+            if test_set_variant == 2:
+                X_test, y_test = create_original_set_ratios(X_test, y_test, [0.12,0.88], set_bound[1])
+                #X_train, y_train = create_original_set_ratios(X_train, y_train, [0.12,0.88], set_bound[0])
+
+            print('Training set:', len(y_train))
+            print_type_ratios(X_train,y_train)
+            print('Testing set:', len(y_test))
+            print_type_ratios(X_test,y_test)
+
+            # collect our sensitive attribute
+            race_train = X_train[:, 1]
+            race_test = X_test[:, 1]
+            # weight_index: 1 means all equal weights
+            if weight_idx:
+                #print('Sample weights are all equal.')
+                sample_weight_train = np.ones(shape=(len(y_train),))
+                sample_weight_test = np.ones(shape=(len(y_test),))
+            # weight_index: 0 means use sample weights
+            elif weight_idx:
+                print('Sample weights are NOT all equal.')
+                # TODO
+                #print('TODO')
+            #return X_train, X_test, y_train, y_test, race_train, race_test, sample_weight_train, sample_weight_test
+
+            visual_scores_by_race(results_dir,'all',X)
+            visual_repay_dist(results_dir,'all',X,y)
+            visual_scores_by_race(results_dir,'train',X_train)
+            visual_scores_by_race(results_dir,'test',X_test)
+            visual_repay_dist(results_dir,'train',X_train, y_train)
+            visual_repay_dist(results_dir,'test',X_test,y_test)
+            # split up X_test by race
+            X_test_b = []
+            X_test_w = []
+            y_test_b = []
+            y_test_w = []
+
+            for index in range(len(X_test)):
+                if race_test[index] == 0:  # black
+                    X_test_b.append(X_test[index][0])
+                    y_test_b.append(y_test[index])
+                elif race_test[index] == 1:  # white
+                    X_test_w.append(X_test[index][0])
+                    y_test_w.append(y_test[index])
+            #T_test_b = ['TP' if e==1 else "TN" for e in y_test_b]
+            #T_test_w = ['TP' if e==1 else "TN" for e in y_test_w]
+
+            #all_types.extend([T_test_b,T_test_w])
+            all_scores.extend([X_test_b,X_test_w])
+            scores_names.extend([f'testB', f'testW'])
+
+            #np.random.seed(0)
+            model = classifier.fit(X_train,y_train, sample_weight_train)
+            y_predict = model.predict(X_test)
+
+            # Scores on test set
+            test_scores = model.predict_proba(X_test)[:, 1]
+            models_dict = {"Unmitigated": (y_predict, test_scores)}
+
+            # given predictions+outcomes, I'll need to do the same
+            x = data[['score', 'race']].values
+            y = data['repay_indices'].values
+            scores = cross_val_score(model, x, y, cv=5, scoring='f1_weighted')
+
+            #save scores and types (TP,FP,TN,FN) in list
+            X_b, X_w, T_b, T_w = get_new_scores(X_test, y_predict, y_test, race_test)
+            #all_types.extend([T_b,T_w])
+            all_scores.extend([X_b,X_w])
+            scores_names.extend([f'unmitB', f'unmitW'])
+
+            # evaluate model
+            constraint_str = 'Un-'
+            results_overall, results_black, results_white = evaluating_model(constraint_str,X_test,y_test, y_predict, sample_weight_test,race_test)
+
+            # adding results to dict
+            run_key = f'{model_str} Unmitigated'
+            overall_results_dict = add_values_in_dict(overall_results_dict, run_key, results_overall)
+            black_results_dict = add_values_in_dict(black_results_dict, run_key, results_black)
+            white_results_dict = add_values_in_dict(white_results_dict, run_key, results_white)
+
+            # train all constrained model for this model type
+            for algo_str in reduction_algorithms.values():
+                for constraint_str in constraints.values():
+
+                    print(algo_str,constraint_str)
+                    mitigator, results_overall, results_black, results_white, y_pred_mitigated = add_constraint(model, constraint_str, algo_str, X_train, y_train, race_train, race_test, X_test, y_test, y_predict, sample_weight_test, dashboard_bool=False)
+
+                    #save scores in list
+                    X_b, X_w, T_b, T_w = get_new_scores(X_test, y_pred_mitigated, y_test, race_test)
+                    #all_types.extend([T_b,T_w])
+                    all_scores.extend([X_b,X_w])
+                    scores_names.extend([f'{algo_str.lower()}{constraint_str.lower()}B', f'{algo_str.lower()}{constraint_str.lower()}W'])
+
+                    run_key = f'{model_str} {algo_str} {constraint_str} Mitigated'
+                    overall_results_dict = add_values_in_dict(overall_results_dict, run_key, results_overall)
+                    black_results_dict = add_values_in_dict(black_results_dict, run_key, results_black)
+                    white_results_dict = add_values_in_dict(white_results_dict, run_key, results_white)
+
+            overall_results_k.append(overall_results_dict)
+            black_results_k.append(black_results_dict)
+            white_results_k.append(white_results_dict)
+
+            scores_names_k.append(scores_names)
+            all_scores_k.append(all_scores)
+            #all_types_k.append(all_types)
+
+
+        o_results = average_results_dict(overall_results_k)
+        b_results = average_results_dict(black_results_k)
+        w_results = average_results_dict(white_results_k)
+        scores_results,scores_labels = average_score_lists(scores_names_k,all_scores_k)
+        # save evaluations
+        if save == True:
+            overall_fieldnames = ['Run', 'Acc', 'ConfMatrix','F1micro', 'F1weighted','F1binary', 'SelectionRate', 'TNR rate', 'TPR rate', 'FNER', 'FPER', 'DIB','DIW', 'DP Diff', 'EO Diff', 'TPR Diff', 'FPR Diff', 'ER Diff']
+            byrace_fieldnames = ['Run', 'Acc', 'ConfMatrix','F1micro', 'F1weighted','F1binary', 'SelectionRate', 'TNR rate', 'TPR rate', 'FNER', 'FPER', 'DI']
+            save_dict_in_csv(o_results, overall_fieldnames, results_path+model_str+'_overall_results.csv')
+            save_dict_in_csv(b_results, byrace_fieldnames, results_path+model_str+'_black_results.csv')
+            save_dict_in_csv(w_results, byrace_fieldnames, results_path+model_str+'_white_results.csv')
+
+            # Save overall score results
+            columns_data_scores = zip_longest(*scores_results)
+            #columns_data_types = zip_longest(*all_types)
+
+            with open(results_path+model_str+'_all_scores.csv',mode='w') as f:
+                writer = csv.writer(f)
+                writer.writerow(scores_labels)
+                writer.writerows(columns_data_scores)
+                f.close()
+        #    with open(results_path+model_str+'_all_types.csv',mode='w') as f:
+            #    writer = csv.writer(f)
+            #    writer.writerow(scores_names)
+            #    writer.writerows(columns_data_types)
+            #    f.close()

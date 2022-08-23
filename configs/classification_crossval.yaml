@@ -1,0 +1,35 @@
+
+data_path: 'data/synthetic_ds/BaseLine.csv'
+results_dir: 'results/crossval/'
+weight_idx: 1
+testset_size: 0.3
+demo_ratio: 'Unrelevant'
+#  - #Training
+  #  - 0 #Black
+  #  - 0 #White
+#  - #Testing
+  #  - 0 #Black
+#    - 0 #White
+  #Testing
+label_ratio: 'unrelevant' # For Group Black
+#  - 0 #False 0
+#  - 0 #True 1
+test_set_variant: 0 # 1= balanced testset 0= default 2= original,true FICO distribution
+set_bound:
+  - 80000
+  - 40000
+models:
+  #Decision Tree: 'dt'
+  #Gaussian Naive Bayes: 'gnb'
+  #Logistic Regression: 'lgr'
+  Gradient_Boosted_Trees: 'gbt'
+constraints:
+  Demografic Parity: 'DP'
+  Equalized Odds: 'EO'
+  Equality of Opportunity: 'TPRP'
+  False Positive Rate Parity: 'FPRP'
+  Error Rate Parity: 'ERP'
+reduction_algorithms:
+  Exponential Gradient: 'EG'
+  Grid Search: 'GS'
+save: True
