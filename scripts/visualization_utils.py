@@ -108,88 +108,6 @@ def visual_repay_dist(path,fname,x,y):
 
 
 
-def update_model_perf_dict(sweep, models_dict, sweep_preds, sweep_scores, non_dominated, decimal, y_test, race_test, model_name):
-    """
-    ...
-        Args:
-            - sweep <>:
-            - models_dict <>:
-            - sweep_preds <>:
-            - sweep_scores <>:
-            - non_dominated <>:
-            - decimal <>:
-            - y_test <>:
-            - race_test <>:
-            - model_name <>:
-        Returns:
-            - models_dict <>:
-    """
-    # Compare GridSearch models with low values of fairness-diff with the previously constructed models
-    ##print(model_name)
-    grid_search_dict = {model_name.format(i): (sweep_preds[i], sweep_scores[i]) #{'GS_DP'.format(i): (sweep_preds[i], sweep_scores[i])
-                        for i in range(len(sweep_preds))
-                        if non_dominated[i] and sweep[i] < decimal}
-    models_dict.update(grid_search_dict)
-    #print(get_metrics_df(models_dict, y_test, race_test))
-    return models_dict
-
-
-def grid_search_show(model, constraint, y_predict, X_test, y_test, race_test, constraint_name, model_name, models_dict, decimal):
-    """
-    Plots grid...
-        Args:
-            - model <>:
-            - constraint <>:
-            - y_predict <>:
-            - X_test <>:
-            - y_test <>:
-            - race_test <>:
-            - y_test <>:
-            - race_test <>:
-            - constraint_name <>:
-            - model_name <>:
-            - models_dict <>:
-            - decimal <>:
-        Returns:
-            - models_dict <>:
-    """
-    sweep_preds = [predictor.predict(X_test) for predictor in model.predictors_]
-    sweep_scores = [predictor.predict_proba(X_test)[:, 1] for predictor in model.predictors_]
-
-    sweep = [constraint(y_test, preds, sensitive_features=race_test)
-             for preds in sweep_preds]
-    accuracy_sweep = [accuracy_score(y_test, preds) for preds in sweep_preds]
-    # auc_sweep = [roc_auc_score(y_test, scores) for scores in sweep_scores]
-
-    # Select only non-dominated models (with respect to accuracy and equalized odds difference)
-    all_results = pd.DataFrame(
-        {'predictor': model.predictors_, 'accuracy': accuracy_sweep, 'disparity': sweep}
-    )
-    non_dominated = []
-    for row in all_results.itertuples():
-        accuracy_for_lower_or_eq_disparity = all_results['accuracy'][all_results['disparity'] <= row.disparity]
-        if row.accuracy >= accuracy_for_lower_or_eq_disparity.max():
-            non_dominated.append(True)
-        else:
-            non_dominated.append(False)
-
-    sweep_non_dominated = np.asarray(sweep)[non_dominated]
-    accuracy_non_dominated = np.asarray(accuracy_sweep)[non_dominated]
-    # auc_non_dominated = np.asarray(auc_sweep)[non_dominated]
-
-    # Plot DP difference vs balanced accuracy
-    plt.scatter(accuracy_non_dominated, sweep_non_dominated, label=model_name)
-    plt.scatter(accuracy_score(y_test, y_predict),
-                constraint(y_test, y_predict, sensitive_features=race_test),
-                label='Unmitigated Model')
-    plt.xlabel('Accuracy')
-    plt.ylabel(constraint_name)
-    plt.legend(bbox_to_anchor=(1.55, 1))
-    plt.show()
-    models_dict = update_model_perf_dict(sweep, models_dict, sweep_preds, sweep_scores, non_dominated, decimal, y_test, race_test, model_name)
-    return models_dict
-
-
 def impact_bar_plots(data_path, b_or_w = 'Black',folders= ['dt','lgr','gbt','gnb']):
     """
     Bar plots of the Delayed Impact for each model by classifier
@@ -209,22 +127,20 @@ def impact_bar_plots(data_path, b_or_w = 'Black',folders= ['dt','lgr','gbt','gnb
         df = df.reset_index()
         dfs[i] = list(df.iloc[:,-1])
 
-    plt.rcParams["figure.figsize"] = [8, 7]
+    plt.rcParams["figure.figsize"] = [5, 5]
     plt.rcParams["figure.autolayout"] = True
     plt.rcParams["font.size"] = 11
 
     # Colors and labels for bars,labels and legend
-    colors=['#FFAE49','#024B7A','#024B7A','#024B7A','#024B7A','#024B7A','#44B7C2','#44B7C2','#44B7C2','#44B7C2','#44B7C2']
-    colors_text=['black','white','white','white','white','white','black','black','black','black','black']
-    black_patch = mpatches.Patch(color='#FFAE49', label ='No Reduction')
-    blue_patch = mpatches.Patch(color='#024B7A', label ='Expo. Gradient Reduction')
-    cyan_patch = mpatches.Patch(color='#44B7C2', label ='Grid Search Reduction')
-    idx = ['Unmitigated', 'DP', 'EO', 'TPRP', 'FPRP', 'ERP', ' DP', ' EO', ' TPRP', ' FPRP', ' ERP']
+    colors=['#FFAE49','#024B7A','#024B7A','#024B7A','#024B7A','#024B7A']
+    black_patch = mpatches.Patch(color='#FFAE49', label ='Unmitigated')
+    blue_patch = mpatches.Patch(color='#024B7A', label ='Mitigated')
+    idx = ['-', 'DP', 'EO', 'TPRP', 'FPRP', 'ERP']
 
     # enumerate through folders and make a bar plot for each classifier
     for i in range(len(folders)):
         fig, ax = plt.subplots()
-        ax.set_title(f'Delayed Impact for all Models for Classifier: {folders[i]} / Group: {b_or_w}\n\n')
+        ax.set_title(f'Delayed Impact for Classifier: {folders[i]} / Group: {b_or_w}\n\n')
         plt.bar(idx,dfs[i],width= 0.9, color=colors)
 
         # Add the y value as label on top of each bar
@@ -233,11 +149,9 @@ def impact_bar_plots(data_path, b_or_w = 'Black',folders= ['dt','lgr','gbt','gnb
 
         # labels
         ax.set_xticks(idx)
-        ax.set_xticklabels(idx, rotation=90)
-        ax.set_xlabel('Constraint')
+        ax.set_xlabel('Fairness Constraint')
         ax.set_ylabel('Impact')
-
         #legend
-        ax.legend(handles=[black_patch,blue_patch,cyan_patch], bbox_to_anchor=(0,1.02,1,0.2), loc="lower left",mode="expand", borderaxespad=0, ncol=3)
+        ax.legend(handles=[black_patch,blue_patch], loc='lower right')
 
         plt.savefig(f'{data_path}{folders[i]}/{b_or_w}_DI.png')

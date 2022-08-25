@@ -1,10 +1,10 @@
 
 data_dir: 'data/raw/'
-result_path: 'data/synthetic_ds/Demo-o_Repay-o.csv'
+result_path: 'data/synthetic_ds2/Demo-0-Lab-o.csv'
 order_of_magnitude: 100000
 group_size_ratio:
-  - 0.88 #black
-  - 0.12 #white
+  - 0.12 #black
+  - 0.88 #white
 black_label_ratio:
   - 0.34 #0
   - 0.66 #1

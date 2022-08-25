@@ -1,19 +1,8 @@
 
-data_path: 'data/synthetic_ds/Demo-i_Repay-b.csv'
-results_dir: 'results/synthetic_origTestSet/ib/'
+data_path: 'data/synthetic_ds2/Demo-i-Lab-0.csv'
+results_dir: 'results/syn_orig/i0/'
 weight_idx: 1
 testset_size: 0.3
-demo_ratio: 'Unrelevant'
-#  - #Training
-  #  - 0 #Black
-  #  - 0 #White
-#  - #Testing
-  #  - 0 #Black
-#    - 0 #White
-  #Testing
-label_ratio: 'unrelevant' # For Group Black
-#  - 0 #False 0
-#  - 0 #True 1
 test_set_variant: 2 # 1= balanced testset 0= default 2= original,true FICO distribution
 set_bound:
   - 70000
@@ -29,7 +18,4 @@ constraints:
   Equality of Opportunity: 'TPRP'
   False Positive Rate Parity: 'FPRP'
   Error Rate Parity: 'ERP'
-reduction_algorithms:
-  Exponential Gradient: 'EG'
-  Grid Search: 'GS'
 save: True
