@@ -44,6 +44,7 @@ def get_data(file):
     #print(data)
     return data
 
+
 def create_original_set_ratios(x_data, y_data, race_ratio, set_size_upper_bound):
     """
     Changes the proportions of samples in the set. Proportion of each group (race) and proportion of labels for the Black (0) group.
@@ -112,6 +113,7 @@ def create_original_set_ratios(x_data, y_data, race_ratio, set_size_upper_bound)
     idx = sorted(np.concatenate((idx_0N,idx_0P,idx_1N,idx_1P)))
 
     return x_data[idx,:], y_data[idx]
+
 
 def balance_test_set_ratios(x_data, y_data, test_set_bound):
 
@@ -253,16 +255,15 @@ def get_constraint(constraint_str):
    return constraint
 
 
-
-def get_new_scores(X_test, y_predict, y_test, race_test):
+def get_new_scores(X_test, y_predict, y_test, di_means, di_stds, race_test):
     black_scores = []
     black_types = []
     white_scores = []
     white_types = []
     up_bound = 850
     low_bound = 300
-    reward = 75
-    penalty = -150
+    reward_mu, penalty_mu = di_means
+    reward_std, penalty_std = di_stds
 
     for index, label in enumerate(y_predict):
 
@@ -270,14 +271,14 @@ def get_new_scores(X_test, y_predict, y_test, race_test):
         if label == 1 and y_test[index] == 1:  # if it's a TP
             if race_test[index] == 0:  # black
                 black_types.append('TP')
-                new_score = X_test[index][0] + reward
+                new_score = X_test[index][0] + int(np.random.normal(reward_mu, reward_std,1))
                 if new_score <= up_bound:
                     black_scores.append(new_score)
                 else:
                     black_scores.append(up_bound)
             elif race_test[index] == 1:  # white
                 white_types.append('TP')
-                new_score = X_test[index][0] + reward
+                new_score = X_test[index][0] + int(np.random.normal(reward_mu, reward_std,1))
                 if new_score <= up_bound:
                     white_scores.append(new_score)
                 else:
@@ -285,14 +286,14 @@ def get_new_scores(X_test, y_predict, y_test, race_test):
         elif label == 1 and y_test[index] == 0:  # if it's a FP
             if race_test[index] == 0:  # black
                 black_types.append('FP')
-                new_score = X_test[index][0] + penalty
+                new_score = X_test[index][0] + int(np.random.normal(penalty_mu, penalty_std,1))
                 if new_score < low_bound:
                     black_scores.append(low_bound)
                 else:
                     black_scores.append(new_score)
             elif race_test[index] == 1:  # white
                 white_types.append('FP')
-                new_score = X_test[index][0] + penalty
+                new_score = X_test[index][0] + int(np.random.normal(penalty_mu, penalty_std,1))
                 if new_score < low_bound:
                     white_scores.append(low_bound)
                 else:
@@ -346,7 +347,7 @@ def save_dict_in_csv(results_dict, fieldnames, name_csv):
         csv_file.close()
 
 
-def add_constraint(model, constraint_str, X_train, y_train, race_train, race_test, X_test, y_test, y_predict, sample_weight_test, dashboard_bool):
+def add_constraint(model, constraint_str, X_train, y_train, race_train, race_test, X_test, y_test, y_predict,di_means,di_stds, sample_weight_test, dashboard_bool):
     # set seed for consistent results with ExponentiatedGradient
     #np.random.seed(0)
     constraint = get_constraint(constraint_str)
@@ -355,7 +356,7 @@ def add_constraint(model, constraint_str, X_train, y_train, race_train, race_tes
     mitigator.fit(X_train, y_train, sensitive_features=race_train)
     y_pred_mitigated = mitigator.predict(X_test) #y_pred_mitigated
 
-    results_overall, results_black, results_white = evaluating_model(constraint_str,X_test,y_test, y_pred_mitigated, sample_weight_test,race_test)
+    results_overall, results_black, results_white = evaluating_model(constraint_str,X_test,y_test, y_pred_mitigated, di_means,di_stds, sample_weight_test,race_test)
 
     if dashboard_bool:
         pass
@@ -363,7 +364,7 @@ def add_constraint(model, constraint_str, X_train, y_train, race_train, race_tes
     return mitigator, results_overall, results_black, results_white, y_pred_mitigated
 
 
-def classify(data_path,results_dir,weight_idx,testset_size, test_set_variant, set_bound, models,constraints,save):
+def classify(data_path,results_dir,weight_idx,testset_size, test_set_variant, set_bound, di_means, di_stds, models,constraints,save):
 
     warnings.filterwarnings('ignore', category=FutureWarning)
     # Load and Prepare data
@@ -432,14 +433,14 @@ def classify(data_path,results_dir,weight_idx,testset_size, test_set_variant, se
         scores = cross_val_score(model, x, y, cv=5, scoring='f1_weighted')
 
         #save scores and types (TP,FP,TN,FN) in list
-        X_b, X_w, T_b, T_w = get_new_scores(X_test, y_predict, y_test, race_test)
+        X_b, X_w, T_b, T_w = get_new_scores(X_test, y_predict, y_test, di_means, di_stds, race_test)
         all_types.extend([T_b,T_w])
         all_scores.extend([X_b,X_w])
         scores_names.extend(['unmitB', 'unmitW'])
 
         # evaluate model
         constraint_str = 'Un-'
-        results_overall, results_black, results_white = evaluating_model(constraint_str,X_test,y_test, y_predict, sample_weight_test,race_test)
+        results_overall, results_black, results_white = evaluating_model(constraint_str,X_test,y_test, y_predict, di_means,di_stds, sample_weight_test,race_test)
 
         # adding results to dict
         run_key = f'{model_str} Unmitigated'
@@ -451,10 +452,10 @@ def classify(data_path,results_dir,weight_idx,testset_size, test_set_variant, se
         for constraint_str in constraints.values():
 
             print(constraint_str)
-            mitigator, results_overall, results_black, results_white, y_pred_mitigated = add_constraint(model, constraint_str, X_train, y_train, race_train, race_test, X_test, y_test, y_predict, sample_weight_test, dashboard_bool=False)
+            mitigator, results_overall, results_black, results_white, y_pred_mitigated = add_constraint(model, constraint_str, X_train, y_train, race_train, race_test, X_test, y_test, y_predict,di_means,di_stds, sample_weight_test, dashboard_bool=False)
 
             #save scores in list
-            X_b, X_w, T_b, T_w = get_new_scores(X_test, y_pred_mitigated, y_test, race_test)
+            X_b, X_w, T_b, T_w = get_new_scores(X_test, y_pred_mitigated, y_test, di_means, di_stds, race_test)
             all_types.extend([T_b,T_w])
             all_scores.extend([X_b,X_w])
             scores_names.extend([f'{constraint_str.lower()}B', f'{constraint_str.lower()}W'])

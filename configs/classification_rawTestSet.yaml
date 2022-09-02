@@ -1,12 +1,18 @@
 
-data_path: 'data/synthetic_ds2/Demo-i-Lab-0.csv'
-results_dir: 'results/syn_raw/i0/'
+data_path: 'data/synthetic_ds2/Demo-0-Lab-0.csv'
+results_dir: 'results/baseline_std100_m100/'
 weight_idx: 1
 testset_size: 0.3
 test_set_variant: 0 # 1= balanced testset 0= default 2= original,true FICO distribution
 set_bound:
   - 70000
   - 30000
+di_means:
+  - 100
+  - -100
+di_stds:
+  - 100
+  - 100
 models:
   Decision Tree: 'dt'
   Gaussian Naive Bayes: 'gnb'

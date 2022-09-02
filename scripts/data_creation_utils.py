@@ -171,14 +171,14 @@ def adjust_set_ratios(x_data, y_data, label_ratio, race_ratio, set_size_upper_bo
     else:
         set_size = len(y_data)
 
-    num_0 = int(set_size * race_ratio[0])
-    num_1 = int(set_size * race_ratio[1])
+    num_0 = int(round(set_size * race_ratio[0]))
+    num_1 = int(round(set_size * race_ratio[1]))
 
     # number of samples for the Black group, according to the label ratio
-    num_0P = int(num_0 * label_ratio[1])
-    num_0N = int(num_0 * label_ratio[0])
-    num_1P = int(num_1 * 0.76)
-    num_1N = int(num_1 * 0.24)
+    num_0P = int(round(num_0 * label_ratio[1]))
+    num_0N = int(round(num_0 * label_ratio[0]))
+    num_1P = int(round(num_1 * 0.76))
+    num_1N = int(round(num_1 * 0.24))
 
     # getting the indices of each samples for each group
     idx_0N = np.where((x_data[:, 2] == 0) & (y_data == 0))[0]
@@ -190,25 +190,24 @@ def adjust_set_ratios(x_data, y_data, label_ratio, race_ratio, set_size_upper_bo
     # if group size numbers are larger than the available samples for that group adjust it
     if len(idx_0P) < num_0P:
         num_0P = len(idx_0P)
-        num_0N = int(num_0P/label_ratio[1] * label_ratio[0])
-        num_1P =  int((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * 0.76)
-        num_1N =  int((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * 0.24)
+        num_0N = int(round(num_0P/label_ratio[1] * label_ratio[0]))
+        num_1P =  int(round((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * 0.76))
+        num_1N =  int(round((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * 0.24))
     if len(idx_0N) < num_0N:
         num_0N = len(idx_0N)
-        num_0P = int(num_0N/label_ratio[0] * label_ratio[1])
-        num_1 = int((num_0N + num_0P)/race_ratio[0] * race_ratio[1])
-        num_1P =  int((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * 0.76)
-        num_1N =  int((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * 0.24)
+        num_0P = int(round(num_0N/label_ratio[0] * label_ratio[1]))
+        num_1P =  int(round((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * 0.76))
+        num_1N =  int(round((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * 0.24))
     if len(idx_1P) < num_1P:
         num_1P = len(idx_1P)
-        num_1N = int(num_1P/0.76 * 0.24)
-        num_0P =  int((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * label_ratio[1])
-        num_0N =  int((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * label_ratio[0])
+        num_1N = int(round(num_1P/0.76 * 0.24))
+        num_0P =  int(round((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * label_ratio[1]))
+        num_0N =  int(round((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * label_ratio[0]))
     if len(idx_1N) < num_1N:
         num_1N = len(idx_1N)
-        num_1P = int(num_1N/0.24 * 0.76)
-        num_0P =  int((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * label_ratio[1])
-        num_0N =  int((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * label_ratio[0])
+        num_1P = int(round(num_1N/0.24 * 0.76))
+        num_0P =  int(round((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * label_ratio[1]))
+        num_0N =  int(round((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * label_ratio[0]))
     # adjusting racio distrubution as well
 
 
@@ -221,7 +220,6 @@ def adjust_set_ratios(x_data, y_data, label_ratio, race_ratio, set_size_upper_bo
     idx = sorted(np.concatenate((idx_0N,idx_0P,idx_1N,idx_1P)))
 
     return x_data[idx,:], y_data[idx]
-
 
 
 def sample(group_size_ratio, order_of_magnitude, shuffle_seed,scores_arr, pi_A, pi_B, repay_A_arr, repay_B_arr):
@@ -292,6 +290,7 @@ def sample(group_size_ratio, order_of_magnitude, shuffle_seed,scores_arr, pi_A, 
 
     return data_all_df_shuffled
 
+
 def load_sample_and_save(data_dir, result_path, order_of_magnitude, group_size_ratio, black_label_ratio, set_size, round_num_scores, shuffle_seed = None):
     """
     Complete pipeline of loading, parsing,sampling and saving of the created synthetic dataset.
@@ -315,7 +314,7 @@ def load_sample_and_save(data_dir, result_path, order_of_magnitude, group_size_r
     repay_B_arr = pd.Series.to_numpy(repay_B)*100
 
     # generate first batch of samples:
-    data = sample(group_size_ratio, order_of_magnitude,shuffle_seed, scores_arr, pi_A, pi_B, repay_A_arr, repay_B_arr)
+    data = sample([0.12,0.88], order_of_magnitude,shuffle_seed, scores_arr, pi_A, pi_B, repay_A_arr, repay_B_arr)
 
     # split the data cols (x,y)
     x = data[['score','repay_probability', 'race']].values
@@ -335,7 +334,7 @@ def load_sample_and_save(data_dir, result_path, order_of_magnitude, group_size_r
     while len(y) < set_size:
         i += 1
         # Generate new samples
-        data_add = sample(group_size_ratio, order_of_magnitude,i, scores_arr, pi_A, pi_B, repay_A_arr, repay_B_arr)
+        data_add = sample([0.12,0.88], order_of_magnitude,i, scores_arr, pi_A, pi_B, repay_A_arr, repay_B_arr)
         data = pd.concat([data,data_add])
 
         # split the data cols (x,y)
@@ -344,15 +343,16 @@ def load_sample_and_save(data_dir, result_path, order_of_magnitude, group_size_r
 
         # adjust the set according to the ratios specified
         x,y = adjust_set_ratios(x,y, black_label_ratio, group_size_ratio, set_size)
-        idx_An = np.where((x[:, 2] == 0) & (y == 0))[0]
-        idx_Ap = np.where((x[:, 2] == 0) & (y == 1))[0]
-        idx_B = np.where((x[:, 2] == 1))[0]
-        # merge x,y back into a DataFrame
-        df = {'score':x[:,0],'repay_probability': x[:,1],'race':x[:,2],'repay_indices': y}
-        data = pd.DataFrame(df)
 
+        if len(y) >= set_size:
+            idx_An = np.where((x[:, 2] == 0) & (y == 0))[0]
+            idx_Ap = np.where((x[:, 2] == 0) & (y == 1))[0]
+            idx_B = np.where((x[:, 2] == 1))[0]
+            # merge x,y back into a DataFrame
+            df = {'score':x[:,0],'repay_probability': x[:,1],'race':x[:,2],'repay_indices': y}
+            data = pd.DataFrame(df)
     # print proportions of dataset
-        print(i,'Black N/P:',len(idx_An),'/',len(idx_Ap),'White:',len(idx_B))
+    print(i,'Black N/P:',len(idx_An),'/',len(idx_Ap),'White:',len(idx_B))
 
     #Save pandas Dataframes in CSV
     data.to_csv(index=False, path_or_buf=result_path)

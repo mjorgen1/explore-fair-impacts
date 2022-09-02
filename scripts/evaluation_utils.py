@@ -74,7 +74,7 @@ def print_fairness_metrics(y_true, y_pred, sensitive_features, sample_weight):
     return dp_diff, eod_diff, eoo_diff, fpr_dif, er_dif
 
 
-def calculate_delayed_impact(X_test, y_true, y_pred, race_test):
+def calculate_delayed_impact(X_test, y_true, y_pred,di_means,di_stds, race_test):
     """
     Calculate the Delayed Impact (DI) (average score change of each group) (considering TP,FP)
         Args:
@@ -87,8 +87,10 @@ def calculate_delayed_impact(X_test, y_true, y_pred, race_test):
             - di_white <float>: DI for group White
     """
 
-    reward = 75 # TPs --> score increase by 75
-    penalty = -150 # FPs --> score drop of 150
+    reward_mu, penalty_mu = di_means
+    reward_std, penalty_std = di_stds
+    #reward = 75 # TPs --> score increase by 75
+    #penalty = -150 # FPs --> score drop of 150
     # TNs and FNs do not change (in this case)
     # bounds
     up_bound = 850
@@ -101,7 +103,7 @@ def calculate_delayed_impact(X_test, y_true, y_pred, race_test):
     for index, true_label in enumerate(y_true):
         # check for TPs
         if true_label == y_pred[index] and true_label==1:
-            new_score = X_test[index][0] + reward
+            new_score = X_test[index][0] + int(np.random.normal(reward_mu, reward_std,1))
             if race_test[index] == 0:  # black borrower
                 if new_score >= up_bound:
                     score_diff_black.append(up_bound-X_test[index][0])
@@ -114,7 +116,7 @@ def calculate_delayed_impact(X_test, y_true, y_pred, race_test):
                     score_diff_white.append(new_score - X_test[index][0])
         # check for FPs
         elif true_label == 0 and y_pred[index] == 1:
-            new_score = X_test[index][0] + penalty
+            new_score = X_test[index][0] + int(np.random.normal(penalty_mu, penalty_std,1))
             if race_test[index] == 0:  # black borrower
                 if new_score < low_bound:
                     score_diff_black.append(low_bound-X_test[index][0])
@@ -258,7 +260,7 @@ def analysis(y_test, y_pred, sample_weights):
     return round(results_dict['accuracy']*100, 2), str(conf_matrix), round(f1_micro * 100, 2), round(f1_weighted * 100, 2), round(f1_binary * 100, 2), round(tnr*100, 2), round(tpr*100, 2), round(fner*100, 2), round(fper*100, 2)
 
 
-def evaluation_by_race(X_test, y_test, race_test, y_predict, sample_weight):
+def evaluation_by_race(X_test, y_test, race_test, y_predict,di_means,di_stds, sample_weight):
     """
     Splits the data into race and computes evaluation for each race.
         Args:
@@ -266,7 +268,7 @@ def evaluation_by_race(X_test, y_test, race_test, y_predict, sample_weight):
             - y_test <numpy.ndarray>: true labels of the test set
             - race test <numpy.ndarray>: race indicator for samples in the test set
             - y_predict <numpy.ndarray>: predicted labels for the test set
-            - sample_weight <>:
+            - sample_weight <c>:
         Returns:
             - results_black <>: eval results for group/race black
             - results_white <>: eval results for group/race white
@@ -292,14 +294,14 @@ def evaluation_by_race(X_test, y_test, race_test, y_predict, sample_weight):
     sr_bygroup = get_selection_rates(y_test, y_predict, race_test, 1)  #sr_bygroup is a pandas series
     sr_black = round(sr_bygroup.values[0]*100, 2)
     sr_white = round(sr_bygroup.values[1]*100, 2)
-    di_black, di_white = calculate_delayed_impact(X_test, y_test, y_predict, race_test)
+    di_black, di_white = calculate_delayed_impact(X_test, y_test, y_predict,di_means,di_stds, race_test)
     results_black = [accuracy_black, cs_m_black, f1_m_black, f1_w_black, f1_b_black, sr_black, tnr_black, tpr_black, fner_black, fper_black, round(di_black, 2)]
     results_white = [accuracy_white, cs_m_white, f1_m_white, f1_w_white, f1_b_white, sr_white, tnr_white, tpr_white, fner_white, fper_white, round(di_white, 2)]
 
     return results_black, results_white
 
 
-def evaluating_model(constraint_str,X_test,y_test, y_pred, sample_weight_test,race_test):
+def evaluating_model(constraint_str,X_test,y_test, y_pred,di_means,di_stds, sample_weight_test,race_test):
     """
     Wrapper function which returns the eval results overall and by race
         Args:
@@ -318,7 +320,7 @@ def evaluating_model(constraint_str,X_test,y_test, y_pred, sample_weight_test,ra
     accuracy, cs_matrix, f1_micro, f1_weighted, f1_binary, tnr, tpr, fner, fper = analysis(y_test, y_pred, sample_weight_test)
     sr = get_selection_rates(y_test, y_pred, race_test, 0)
     #print('\n')
-    di_B, di_W = calculate_delayed_impact(X_test, y_test, y_pred, race_test)
+    di_B, di_W = calculate_delayed_impact(X_test, y_test, y_pred,di_means,di_stds, race_test)
     #di_str = str(round(di_black, 2)) + '/' + str(round(di_white, 2))
     #print('\nFairness metric evaluation of ', constraint_str, '-constrained classifier')
     dp_diff, eod_diff, eoo_dif, fpr_dif, er_dif = print_fairness_metrics(y_true=y_test, y_pred=y_pred, sensitive_features=race_test, sample_weight=sample_weight_test)
@@ -326,7 +328,7 @@ def evaluating_model(constraint_str,X_test,y_test, y_pred, sample_weight_test,ra
     results_overall = [accuracy, cs_matrix, f1_micro, f1_weighted, f1_binary, round(sr*100, 2), tnr, tpr, fner, fper, di_B,di_W, round(dp_diff*100, 2), round(eod_diff*100, 2), round(eoo_dif*100, 2), round(fpr_dif*100, 2), round(er_dif*100, 2)]
 
     #print('Evaluation of ', constraint_str, '-constrained classifier by race:')
-    results_black, results_white = evaluation_by_race(X_test, y_test, race_test, y_pred, sample_weight_test)
+    results_black, results_white = evaluation_by_race(X_test, y_test, race_test, y_pred,di_means,di_stds, sample_weight_test)
     #print('\n')
 
     return results_overall, results_black, results_white

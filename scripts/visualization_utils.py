@@ -107,8 +107,7 @@ def visual_repay_dist(path,fname,x,y):
     plt.savefig(f'{path}{fname}_label_distr.png')
 
 
-
-def impact_bar_plots(data_path, b_or_w = 'Black',folders= ['dt','lgr','gbt','gnb']):
+def delayed_impact_bar_plot(data_path, b_or_w = 'Black',classifier= ['DT','GNB','LGR','GBT']):
     """
     Bar plots of the Delayed Impact for each model by classifier
         Args:
@@ -116,42 +115,96 @@ def impact_bar_plots(data_path, b_or_w = 'Black',folders= ['dt','lgr','gbt','gnb
             - b_or_w <str>: (Black,White) group indicator
             - folders <list<str>>: list with the names of the model folder where csv are stored
     """
-    # loading all datafiles and store them in a dict
-    dfs = {} # dict for pandas dfs
-    for i,f in enumerate(folders):
-        if b_or_w == 'Black': # load results of black group
-            path = f'{data_path}{f}/{f}_black_results.csv'
-        elif b_or_w == 'White': # load results of white group
-            path = f'{data_path}{f}/{f}_white_results.csv'
-        df = pd.read_csv(path,index_col=0)
-        df = df.reset_index()
-        dfs[i] = list(df.iloc[:,-1])
 
-    plt.rcParams["figure.figsize"] = [5, 5]
+    line = []
+    for i,c in enumerate(classifier):
+        path = f'{data_path}{b_or_w}_DI.csv'
+        df = pd.read_csv(path)
+        df = df.set_index('Constraint')
+        df = df.loc[:,c]
+        line.append(df)
+
+    plt.rcParams["figure.figsize"] = [6, 5]
     plt.rcParams["figure.autolayout"] = True
     plt.rcParams["font.size"] = 11
 
-    # Colors and labels for bars,labels and legend
-    colors=['#FFAE49','#024B7A','#024B7A','#024B7A','#024B7A','#024B7A']
-    black_patch = mpatches.Patch(color='#FFAE49', label ='Unmitigated')
-    blue_patch = mpatches.Patch(color='#024B7A', label ='Mitigated')
-    idx = ['-', 'DP', 'EO', 'TPRP', 'FPRP', 'ERP']
+    idx = ['Unmitigated', 'DP', 'EO', 'EOO', 'FPER', 'ERP']
+    df = pd.DataFrame(line, columns=idx)
 
-    # enumerate through folders and make a bar plot for each classifier
-    for i in range(len(folders)):
-        fig, ax = plt.subplots()
-        ax.set_title(f'Delayed Impact for Classifier: {folders[i]} / Group: {b_or_w}\n\n')
-        plt.bar(idx,dfs[i],width= 0.9, color=colors)
+    ax = df.plot(kind="bar")
+    ax.set_title(f'Delayed Impact for Group: {b_or_w}')
+    # labels
+    ax.set_ylabel('Impact')
+    ax.set_xlabel('Classifier')
+    plt.xticks(rotation=0)
 
-        # Add the y value as label on top of each bar
-        for j, v in enumerate(dfs[i]):
-            ax.text(j, v, v, ha = 'center', color = 'black', fontsize= 10, bbox = dict(facecolor= '#F9F9F9', edgecolor= colors[j], alpha=0.9, pad=0.5))
+    ax.legend(loc='lower right')
 
-        # labels
-        ax.set_xticks(idx)
-        ax.set_xlabel('Fairness Constraint')
-        ax.set_ylabel('Impact')
-        #legend
-        ax.legend(handles=[black_patch,blue_patch], loc='lower right')
+    plt.savefig(f'{data_path}{b_or_w}_DI.png')
 
-        plt.savefig(f'{data_path}{folders[i]}/{b_or_w}_DI.png')
+def immediate_impact_bar_plot(data_path, b_or_w = 'Black',classifier= ['DT','GNB','LGR','GBT']):
+    """
+    Bar plots of the Delayed Impact for each model by classifier
+        Args:
+            - data_path <str>: path for loading the data file (csv)
+            - b_or_w <str>: (Black,White) group indicator
+            - folders <list<str>>: list with the names of the model folder where csv are stored
+    """
+
+    line = []
+    for i,c in enumerate(classifier):
+        path = f'{data_path}{b_or_w}_FN_I.csv'
+        df = pd.read_csv(path)
+        df = df.set_index('Constraint')
+        df = df.loc[:,c]
+        line.append(df)
+
+    plt.rcParams["figure.figsize"] = [6, 5]
+    plt.rcParams["figure.autolayout"] = True
+    plt.rcParams["font.size"] = 11
+
+    idx = ['Unmitigated', 'DP', 'EO', 'EOO', 'FPER', 'ERP']
+    df = pd.DataFrame(line, columns=idx)
+
+    ax = df.plot(kind="bar")
+    ax.set_title(f'Immediate Impact for Group: {b_or_w}')
+    # labels
+    ax.set_ylabel('TP-FN-Difference')
+    ax.set_xlabel('Classifier')
+    plt.xticks(rotation=0)
+
+    ax.legend(loc='lower right')
+
+    plt.savefig(f'{data_path}{b_or_w}_I.png')
+
+
+def visualize_tpfp(dfs_list = []):
+    for dfs in dfs_list:
+
+        for c,df in dfs.items():
+
+
+            df = df.loc[['TP','FP'],:]
+            df = df.transpose()
+
+            ax = df.plot.bar(stacked=True)
+            ax.set_title(f'Percentage of TP & FP for all Models for Classifier: {c} \n')
+
+            ax.set_xlabel('Model')
+            ax.set_ylabel('Value')
+
+
+def visualize_tnfn(dfs_list = []):
+    for dfs in dfs_list:
+
+        for c,df in dfs.items():
+
+
+            df = df.loc[['TN','FN'],:]
+            df = df.transpose()
+
+            ax = df.plot.bar(stacked=True)
+            ax.set_title(f'Percentage of TN & FN for all Models for Classifier: {c} \n')
+
+            ax.set_xlabel('Model')
+            ax.set_ylabel('Value')
