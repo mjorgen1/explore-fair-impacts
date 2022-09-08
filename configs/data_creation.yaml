@@ -1,6 +1,7 @@
 
 data_dir: 'data/raw/'
 result_path: 'data/synthetic_ds2/Demo-0-Lab-o.csv'
+set_size: 100000
 order_of_magnitude: 100000
 group_size_ratio:
   - 0.12 #black
@@ -8,6 +9,6 @@ group_size_ratio:
 black_label_ratio:
   - 0.34 #0
   - 0.66 #1
-set_size: 100000
+
 round_num_scores: 2
 shuffle_seed: 42

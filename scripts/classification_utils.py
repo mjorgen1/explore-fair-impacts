@@ -62,7 +62,9 @@ def create_original_set_ratios(x_data, y_data, set_size_upper_bound):
             subset of x_data and y_data
     """
     # Black = 0; White = 1
-
+    race_ratio = [0.12,0.88]
+    black_label_ratio = [0.66,0.34]
+    white_label_ratio = [0.24,0.76]
     # limits the absolute test_size if necessary
     if len(y_data) > set_size_upper_bound:
         set_size = set_size_upper_bound
@@ -70,12 +72,12 @@ def create_original_set_ratios(x_data, y_data, set_size_upper_bound):
         set_size = len(y_data)
 
     # set sizes for each race
-    set_size_0 = int(set_size * 0.12)
-    set_size_1 = int(set_size * 0.88)
+    set_size_0 = int(set_size * race_ratio[0])
+    set_size_1 = int(set_size * race_ratio[1])
 
     # number of samples for the Black and White group, according to the label ratios from Fico data
-    num_0P = int(set_size_0 * 0.34)
-    num_0N = int(set_size_0 * 0.66)
+    num_0P = int(set_size_0 * black_label_ratio[1])
+    num_0N = int(set_size_0 * black_label_ratio[0])
     num_1P = int(set_size_1 * 0.76)
     num_1N = int(set_size_1 * 0.24)
 
@@ -90,24 +92,24 @@ def create_original_set_ratios(x_data, y_data, set_size_upper_bound):
     # if group size numbers are larger than the available samples for that group adjust the number of samples
     if len(idx_0P) < num_0P:
         num_0P = len(idx_0P)
-        num_0N = int(num_0P/0.34 * 0.66)
-        num_1P =  int((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * 0.76)
-        num_1N =  int((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * 0.24)
+        num_0N = int(num_0P/black_label_ratio[1] * black_label_ratio[0])
+        num_1P =  int((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * white_label_ratio[1])
+        num_1N =  int((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * white_label_ratio[0])
     if len(idx_0N) < num_0N:
         num_0N = len(idx_0N)
-        num_0P = int(num_0N/0.66 * 0.34)
-        num_1P =  int((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * 0.76)
-        num_1N =  int((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * 0.24)
+        num_0P = int(num_0N/black_label_ratio[0] * black_label_ratio[1])
+        num_1P =  int((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * white_label_ratio[1])
+        num_1N =  int((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * white_label_ratio[0])
     if len(idx_1P) < num_1P:
         num_1P = len(idx_1P)
-        num_1N = int(num_1P/0.76 * 0.24)
-        num_0P =  int((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * 0.34)
-        num_0N =  int((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * 0.66)
+        num_1N = int(num_1P/white_label_ratio[1] * white_label_ratio[0])
+        num_0P =  int((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * black_label_ratio[1])
+        num_0N =  int((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * black_label_ratio[0])
     if len(idx_1N) < num_1N:
         num_1N = len(idx_1N)
-        num_1P = int(num_1N/0.24 * 0.76)
-        num_0P =  int((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * 0.34)
-        num_0N =  int((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * 0.66)
+        num_1P = int(num_1N/white_label_ratio[0] * white_label_ratio[1])
+        num_0P =  int((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * black_label_ratio[1])
+        num_0N =  int((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * black_label_ratio[0])
 
 
     # take the amount of samples, by getting the amount of indices
@@ -169,7 +171,7 @@ def print_type_ratios(x_data,y_data):
     print('Black N/P:',len(idx_0N),'/',len(idx_0P),'White N/P:',len(idx_1N),'/',len(idx_1P))
 
 
-def prep_data(data, test_size, test_set_variant, set_bound,weight_index):
+def prep_data(data, test_size, test_set_variant, test_set_bound,weight_index):
     """
     Prepare training and test set
         Args:
@@ -204,9 +206,9 @@ def prep_data(data, test_size, test_set_variant, set_bound,weight_index):
 
     # adjust test set if necessary
     if test_set_variant == 1: # balanced set
-        X_test, y_test = balance_test_set_ratios(X_test, y_test, set_bound[1])
+        X_test, y_test = balance_test_set_ratios(X_test, y_test, test_set_bound)
     if test_set_variant == 2: # original FICO set ratios
-        X_test, y_test = create_original_set_ratios(X_test, y_test, [0.12,0.88], set_bound[1])
+        X_test, y_test = create_original_set_ratios(X_test, y_test, test_set_bound)
 
     print('Testing set:', len(y_test))
     print_type_ratios(X_test,y_test)
@@ -309,20 +311,19 @@ def get_constraint(constraint_str):
         Returns:
             constraint <object>: fairness  method
     """
-
-   if constraint_str == 'DP':
-       constraint = DemographicParity()
-   elif constraint_str == 'EO':
-       constraint = EqualizedOdds()
-   elif constraint_str == 'TPRP':
-       constraint = TruePositiveRateParity()
-   elif constraint_str == 'FPRP':
-       constraint = FalsePositiveRateParity()
-   elif constraint_str == 'ERP':
-       constraint = ErrorRateParity()
-   else:
-       raise ValueError('unvalid constraint_str')
-   return constraint
+    if constraint_str == 'DP':
+        constraint = DemographicParity()
+    elif constraint_str == 'EO':
+        constraint = EqualizedOdds()
+    elif constraint_str == 'TPRP':
+        constraint = TruePositiveRateParity()
+    elif constraint_str == 'FPRP':
+        constraint = FalsePositiveRateParity()
+    elif constraint_str == 'ERP':
+        constraint = ErrorRateParity()
+    else:
+        raise ValueError('unvalid constraint_str')
+    return constraint
 
 
 def get_new_scores(X_test, y_predict, y_test, di_means, di_stds, race_test):
@@ -467,7 +468,7 @@ def add_constraint(model, constraint_str, X_train, y_train, race_train, race_tes
     return mitigator, results_overall, results_black, results_white, y_pred_mitigated
 
 
-def classify(data_path,results_dir,weight_idx,testset_size, test_set_variant, set_bound, di_means, di_stds, models,constraints,save):
+def classify(data_path,results_dir,weight_idx,testset_size, test_set_variant, test_set_bound, di_means, di_stds, models,constraints,save):
 
 
     warnings.filterwarnings('ignore', category=FutureWarning)
@@ -477,7 +478,7 @@ def classify(data_path,results_dir,weight_idx,testset_size, test_set_variant, se
     y = data['repay_indices'].values
 
 
-    X_train, X_test, y_train, y_test, race_train, race_test, sample_weight_train, sample_weight_test = prep_data(data, testset_size,test_set_variant,set_bound, weight_idx)
+    X_train, X_test, y_train, y_test, race_train, race_test, sample_weight_train, sample_weight_test = prep_data(data, testset_size,test_set_variant,test_set_bound, weight_idx)
 
     visual_scores_by_race(results_dir,'all',x)
     visual_repay_dist(results_dir,'all',x,y)
@@ -532,9 +533,9 @@ def classify(data_path,results_dir,weight_idx,testset_size, test_set_variant, se
         models_dict = {"Unmitigated": (y_predict, test_scores)}
 
         # given predictions+outcomes, I'll need to do the same
-        x = data[['score', 'race']].values
-        y = data['repay_indices'].values
-        scores = cross_val_score(model, x, y, cv=5, scoring='f1_weighted')
+        #x = data[['score', 'race']].values
+        #y = data['repay_indices'].values
+        #scores = cross_val_score(model, x, y, cv=5, scoring='f1_weighted')
 
         #save scores and types (TP,FP,TN,FN) in list
         X_b, X_w, T_b, T_w = get_new_scores(X_test, y_predict, y_test, di_means, di_stds, race_test)

@@ -4,9 +4,7 @@ results_dir: 'results/syn_orig/ii/'
 weight_idx: 1
 testset_size: 0.3
 test_set_variant: 2 # 1= balanced testset 0= default 2= original,true FICO distribution
-set_bound:
-  - 70000
-  - 30000
+test_set_bound: 30000 # upper bound for test_set size
 di_means:
   - 100
   - -100

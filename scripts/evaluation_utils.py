@@ -28,6 +28,79 @@ def inspect_MinMax(samples_A_probs,samples_B_probs):
     print('the min value is: ', min_val_B)
     print('the max value is: ', max_val_B)
 
+def delayed_impact_csv(data_path= 'data/results/',b_or_w = 'Black', folders= ['dt','gnb','lgr','gbt']):
+
+    col_names_df = []
+
+    for i,f in enumerate(folders):
+        if b_or_w == 'Black':
+            path = f'{data_path}{f}/{f}_black_results.csv'
+        else:
+            path = f'{data_path}{f}/{f}_white_results.csv'
+
+        df = pd.read_csv(path,index_col=0)
+        df = df.reset_index()
+
+        col_names_df.append(f'{f.upper()}')
+
+        if i == 0:
+            joined_df = df.iloc[:,-1]
+        else:
+            joined_df = pd.concat([joined_df, df.iloc[:,-1]], axis=1)
+
+    joined_df.set_axis(folders, axis=1)
+
+    # split dataframe after the two reduction algorithms
+    df = joined_df.iloc[:6,:]
+
+    # set new index
+    df['Constraint'] = ['Unmitigated', 'DP', 'EO', 'EOO','FPER','ERP']
+    df.set_index('Constraint',inplace=True)
+
+    df.columns = col_names_df
+
+    print('Group: ',b_or_w,'\n DataFrame: \n',df)
+    df.to_csv(f'{data_path}/{b_or_w}_DI.csv')
+
+def immediate_impact_csv(data_path= 'data/results/',b_or_w = 'Black', folders= ['dt','gnb','lgr','gbt']):
+
+    col_names_df = []
+
+    for i,f in enumerate(folders):
+        if b_or_w == 'Black':
+            path = f'{data_path}{f}/{f}_type_ratios.csv'
+            df = pd.read_csv(path,index_col=0)
+            df = df.filter(like='B')
+
+        else:
+            path = f'{data_path}{f}/{f}_type_ratios.csv'
+            df = pd.read_csv(path,index_col=0)
+            df = df.filter(like='W')
+        col_names_df.append(f'{f.upper()}')
+        df = df.iloc[3,[6,0,1,5,3,2]] - df.iloc[0,[6,0,1,5,3,2]]
+
+        if i == 0:
+            joined_df = df.iloc[:]
+        else:
+            joined_df = pd.concat([joined_df, df.iloc[:]], axis=1)
+
+    joined_df.set_axis(folders, axis=1)
+
+    # split dataframe after the two reduction algorithms
+    df = joined_df.iloc[:6,:]
+
+    # set new index
+    df['Constraint'] = ['Unmitigated', 'DP', 'EO', 'EOO','FPER','ERP']
+    df.set_index('Constraint',inplace=True)
+
+    df.columns = col_names_df
+
+    print('Group: ',b_or_w,'\n DataFrame: \n',df)
+
+    df.to_csv(f'{data_path}/{b_or_w}_I.csv')
+
+
+
 
 def print_fairness_metrics(y_true, y_pred, sensitive_features, sample_weight):
     """
