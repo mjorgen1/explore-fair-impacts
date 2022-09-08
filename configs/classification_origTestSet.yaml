@@ -7,6 +7,12 @@ test_set_variant: 2 # 1= balanced testset 0= default 2= original,true FICO distr
 set_bound:
   - 70000
   - 30000
+di_means:
+  - 100
+  - -100
+di_stds:
+  - 100
+  - 100
 models:
   Decision Tree: 'dt'
   Gaussian Naive Bayes: 'gnb'

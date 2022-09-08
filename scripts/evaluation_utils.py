@@ -9,7 +9,6 @@ from fairlearn.reductions import ExponentiatedGradient, GridSearch, DemographicP
 from fairlearn.metrics import *
 
 
-
 def inspect_MinMax(samples_A_probs,samples_B_probs):
     """
     Prints the lowest and highest repay probability for each group.
@@ -34,43 +33,31 @@ def print_fairness_metrics(y_true, y_pred, sensitive_features, sample_weight):
     """
     Camputing and and printing of numerous fairness metrics.
         Args:
-            - y_true <>:
-            - y_pred <>:
+            - y_true <>: true labels
+            - y_pred <>: predicted labels
             - sensitive_features <>:
             - samples_weight <>:
         Returns:
-            - dp_diff <>:
-            - eod_diff <>:
-            - eoo_diff <>:
-            - fpr_dif <>:
-            - er_dif <>:
+            - dp_diff <float>: dp disparity
+            - eod_diff <float>: eo disparity
+            - eoo_diff <float>: eoo disparity
+            - fpr_dif <float>: fper disparity
+            - er_dif <floate>: erp disparity
     """
-    #sr_mitigated = MetricFrame(metric=selection_rate, y_true=y_true, y_pred=y_pred,
-    #                           sensitive_features=sensitive_features)
-    ##print('Selection Rate Overall: ', sr_mitigated.overall)
-    ##print('Selection Rate By Group: ', sr_mitigated.by_group, '\n')
 
     dp_diff = demographic_parity_difference(y_true=y_true, y_pred=y_pred, sensitive_features=sensitive_features)
     #print('DP Difference: ', dp_diff)
     #print('-->difference of 0 means that all groups have the same selection rate')
-    dp_ratio = demographic_parity_ratio(y_true=y_true, y_pred=y_pred, sensitive_features=sensitive_features)
-    #print('DP Ratio:', dp_ratio)
-    #print('-->ratio of 1 means that all groups have the same selection rate \n')
-
     eod_diff = equalized_odds_difference(y_true=y_true, y_pred=y_pred, sensitive_features=sensitive_features)
     #print('EOD Difference: ', eod_diff)
     #print('-->difference of 0 means that all groups have the same TN, TN, FP, and FN rates')
-    eod_ratio = equalized_odds_ratio(y_true=y_true, y_pred=y_pred, sensitive_features=sensitive_features)
-    #print('EOD Ratio:', eod_ratio)
-    #print('-->ratio of 1 means that all groups have the same TN, TN, FP, and FN rates rates \n')
-
     eoo_diff = tpr_diff(y_true, y_pred, sensitive_features, sample_weight)
     #print('EOO/TPR Difference: ', eoo_diff)
     fpr_dif = fpr_diff(y_true, y_pred, sensitive_features, sample_weight)
     #print('FPR Difference: ', fpr_dif)
     er_dif = er_diff(y_true, y_pred, sensitive_features)
     #print('ER Difference: ', er_dif)
-    #print('')
+
     return dp_diff, eod_diff, eoo_diff, fpr_dif, er_dif
 
 
@@ -87,11 +74,10 @@ def calculate_delayed_impact(X_test, y_true, y_pred,di_means,di_stds, race_test)
             - di_white <float>: DI for group White
     """
 
+    # mean and std for score change distributions
     reward_mu, penalty_mu = di_means
     reward_std, penalty_std = di_stds
-    #reward = 75 # TPs --> score increase by 75
-    #penalty = -150 # FPs --> score drop of 150
-    # TNs and FNs do not change (in this case)
+
     # bounds
     up_bound = 850
     low_bound = 300
@@ -153,6 +139,7 @@ def get_selection_rates(y_true, y_pred, sensitive_features, type_index):
         Returns:
             - sr_return <numpy.ndarray>:
     """
+
     sr_mitigated = MetricFrame(metrics=selection_rate, y_true=y_true, y_pred=y_pred,
                                sensitive_features=sensitive_features)
     sr_return = -1
@@ -175,10 +162,10 @@ def evaluation_outcome_rates(y_true, y_pred, sample_weight):
             - y_pred <numpy.ndarray>: predicted labels for the test set
             - sample_weight <>:
         Returns:
-            - tnr <>:
-            - tpr <>:
-            - fner <>:
-            - fper <>:
+            - tnr <float>: TN rate
+            - tpr <float>: TP rate
+            - fner <float>: FN rate
+            - fper <float>: FP rate
     """
 
     tnr = true_negative_rate(y_true, y_pred, pos_label=1, sample_weight=sample_weight)
@@ -220,9 +207,9 @@ def get_f1_scores(y_test, y_predict):
             - y_test <numpy.ndarray>: true labels of the test set
             - y_predict <numpy.ndarray>: predicted labels for the test set
         Returns:
-            - f1_micro <>:
-            - f1_weighted <>:
-            - f1_binary <>:
+            - f1_micro <float>:
+            - f1_weighted <float>:
+            - f1_binary <float>:
     """
 
     # F1 score micro: calculate metrics globally by counting the total true positives, false negatives and false positives
@@ -249,7 +236,7 @@ def analysis(y_test, y_pred, sample_weights):
             - y_pred <numpy.ndarray>: predicted labels for the test set
             - sample_weights <>:
         Returns:
-            Numerour rounded variables, cumputed below.
+            Numerous rounded variables, cumputed below.
     """
     conf_matrix = confusion_matrix(y_test, y_pred)
     results_dict = classification_report(y_test, y_pred, output_dict=True)
@@ -312,9 +299,9 @@ def evaluating_model(constraint_str,X_test,y_test, y_pred,di_means,di_stds, samp
             - sample_weight_test <>:
             - race test <numpy.ndarray>: race indicator for samples in the test set
         Returns:
-            - results_overall <>:
-            - results_black <>:
-            - results_white <>:
+            - results_overall <list>: wrapper list with eval results overall
+            - results_black <list>: wrapper list with eval results black
+            - results_white <list>: wrapper list with eval results white
     """
     overall_message = 'Evaluation of '+ constraint_str + '-constrained classifier overall:'
     accuracy, cs_matrix, f1_micro, f1_weighted, f1_binary, tnr, tpr, fner, fper = analysis(y_test, y_pred, sample_weight_test)

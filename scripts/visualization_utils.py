@@ -113,7 +113,7 @@ def delayed_impact_bar_plot(data_path, b_or_w = 'Black',classifier= ['DT','GNB',
         Args:
             - data_path <str>: path for loading the data file (csv)
             - b_or_w <str>: (Black,White) group indicator
-            - folders <list<str>>: list with the names of the model folder where csv are stored
+            - classifier <list<str>>: list with the names of the model folder where csv are stored
     """
 
     line = []
@@ -142,13 +142,14 @@ def delayed_impact_bar_plot(data_path, b_or_w = 'Black',classifier= ['DT','GNB',
 
     plt.savefig(f'{data_path}{b_or_w}_DI.png')
 
+
 def immediate_impact_bar_plot(data_path, b_or_w = 'Black',classifier= ['DT','GNB','LGR','GBT']):
     """
     Bar plots of the Delayed Impact for each model by classifier
         Args:
             - data_path <str>: path for loading the data file (csv)
             - b_or_w <str>: (Black,White) group indicator
-            - folders <list<str>>: list with the names of the model folder where csv are stored
+            - classifier <list<str>>: list with the names of the model folder where csv are stored
     """
 
     line = []
@@ -176,35 +177,3 @@ def immediate_impact_bar_plot(data_path, b_or_w = 'Black',classifier= ['DT','GNB
     ax.legend(loc='lower right')
 
     plt.savefig(f'{data_path}{b_or_w}_I.png')
-
-
-def visualize_tpfp(dfs_list = []):
-    for dfs in dfs_list:
-
-        for c,df in dfs.items():
-
-
-            df = df.loc[['TP','FP'],:]
-            df = df.transpose()
-
-            ax = df.plot.bar(stacked=True)
-            ax.set_title(f'Percentage of TP & FP for all Models for Classifier: {c} \n')
-
-            ax.set_xlabel('Model')
-            ax.set_ylabel('Value')
-
-
-def visualize_tnfn(dfs_list = []):
-    for dfs in dfs_list:
-
-        for c,df in dfs.items():
-
-
-            df = df.loc[['TN','FN'],:]
-            df = df.transpose()
-
-            ax = df.plot.bar(stacked=True)
-            ax.set_title(f'Percentage of TN & FN for all Models for Classifier: {c} \n')
-
-            ax.set_xlabel('Model')
-            ax.set_ylabel('Value')

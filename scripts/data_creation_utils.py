@@ -34,7 +34,7 @@ def get_pmf(cdf):
         Args:
             - cdf <numpy.ndarray>: cumulative distribution function (for discrete scores)
         Returns:
-            - pis <numpy.ndarray>: array with the probabiliy by for each score (probability mass function)
+            - pis <numpy.ndarray>: the probabiliy by for each score (probability mass function)
     """
     pis = np.zeros(cdf.size)
     pis[0] = cdf[0]
@@ -104,9 +104,9 @@ def get_repay_probabilities(samples, scores_arr, repay_probs, round_num):
     """
     Gets the rounded repay probabilities for all samples.
         Args:
-            - samples <numpy.ndarray>: list with score samples
-            - repay_probs <numpy.ndarray>: list of repay
-            - round_num <int> {0,1,2}:
+            - samples <numpy.ndarray>: all scores
+            - repay_probs <numpy.ndarray>: repay probabilities
+            - round_num <int> {0,1,2}: rounding decimal indicator
                 0: no rounding (not recommended)
                 1: round to the hundreth decimal
                 2: round to the nearest integer
@@ -208,8 +208,6 @@ def adjust_set_ratios(x_data, y_data, label_ratio, race_ratio, set_size_upper_bo
         num_1P = int(round(num_1N/0.24 * 0.76))
         num_0P =  int(round((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * label_ratio[1]))
         num_0N =  int(round((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * label_ratio[0]))
-    # adjusting racio distrubution as well
-
 
     # take the amount of samples, by getting the amount of indices
     idx_0N = idx_0N[:num_0N]
@@ -302,8 +300,7 @@ def load_sample_and_save(data_dir, result_path, order_of_magnitude, group_size_r
             - black_label_ratio <list<float>>: contains two 2 floats between 0 and 1 (sum = 1), representing the ratio of samples with each labels for the black group (False,True)
             - set_size <int>: absolute size for the dataset (e.g 100,000)
             - round_num_scores <list> {0,1,2}: look at def:get_scores
-            - round_num_repay_probs <int> {0,1,2}: look at def:get_repay_probabilities
-            - shuffle_seed <int>: Seed to cntrol randomness inthe shuffeling of the dataset
+            - shuffle_seed <int>: Seed to control randomness in the shuffeling of the dataset
     """
     # Make repay probabilities into percentages from decimals
     # NOTE: A is Black, B is White
@@ -322,17 +319,12 @@ def load_sample_and_save(data_dir, result_path, order_of_magnitude, group_size_r
 
     # adjust the set according to the ratios specified
     x,y = adjust_set_ratios(x, y, black_label_ratio, group_size_ratio, set_size)
-    idx_An = np.where((x[:, 2] == 0) & (y == 0))[0]
-    idx_Ap = np.where((x[:, 2] == 0) & (y == 1))[0]
-    idx_B = np.where((x[:, 2] == 1))[0]
-    i = 1
-    # merge x,y back into a DataFrame
-    df = {'score':x[:,0],'repay_probability': x[:,1],'race':x[:,2],'repay_indices': y}
-    data = pd.DataFrame(df)
 
-    # if dataset it to small, samplee a larger batch
+    i = 1
+    # as long as the set is to small, generate additional samples
     while len(y) < set_size:
         i += 1
+
         # Generate new samples
         data_add = sample([0.12,0.88], order_of_magnitude,i, scores_arr, pi_A, pi_B, repay_A_arr, repay_B_arr)
         data = pd.concat([data,data_add])
@@ -344,19 +336,16 @@ def load_sample_and_save(data_dir, result_path, order_of_magnitude, group_size_r
         # adjust the set according to the ratios specified
         x,y = adjust_set_ratios(x,y, black_label_ratio, group_size_ratio, set_size)
 
-        if len(y) >= set_size:
-            idx_An = np.where((x[:, 2] == 0) & (y == 0))[0]
-            idx_Ap = np.where((x[:, 2] == 0) & (y == 1))[0]
-            idx_B = np.where((x[:, 2] == 1))[0]
-            # merge x,y back into a DataFrame
-            df = {'score':x[:,0],'repay_probability': x[:,1],'race':x[:,2],'repay_indices': y}
-            data = pd.DataFrame(df)
+
+    # merge x,y back into a DataFrame
+    df = {'score':x[:,0],'repay_probability': x[:,1],'race':x[:,2],'repay_indices': y}
+    data = pd.DataFrame(df)
+
     # print proportions of dataset
+    idx_An = np.where((x[:, 2] == 0) & (y == 0))[0]
+    idx_Ap = np.where((x[:, 2] == 0) & (y == 1))[0]
+    idx_B = np.where((x[:, 2] == 1))[0]
     print(i,'Black N/P:',len(idx_An),'/',len(idx_Ap),'White:',len(idx_B))
 
     #Save pandas Dataframes in CSV
     data.to_csv(index=False, path_or_buf=result_path)
-
-    # To save the data separately by race
-    #data_A_df.to_csv(index=False, path_or_buf='simData_2decProbs_0decScores_groupA_black.csv')
-    #data_B_df.to_csv(index=False, path_or_buf='simData_2decProbs_0decScores_groupB_white.csv')

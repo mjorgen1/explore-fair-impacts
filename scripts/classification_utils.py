@@ -27,7 +27,7 @@ def load_args(file):
         Args:
             - file <str>: full path to .yaml config file
         Returns:
-            - data <dict>: dictionary with all args from file
+            - data <dict>: all args from file
     """
     with open(file, "r") as stream:
         try:
@@ -39,35 +39,41 @@ def load_args(file):
 
 
 def get_data(file):
+    """
+    Load data from csv file.
+        Args:
+            - file <str>: full path to .csv
+        Returns:
+            - data <pd-DataFrame> loaded data
+    """
     data = pd.read_csv(file)
     data[['score', 'race']] = data[['score', 'race']].astype(int)
-    #print(data)
     return data
 
 
-def create_original_set_ratios(x_data, y_data, race_ratio, set_size_upper_bound):
+def create_original_set_ratios(x_data, y_data, set_size_upper_bound):
     """
-    Changes the proportions of samples in the set. Proportion of each group (race) and proportion of labels for the Black (0) group.
+    Create a subset with to the original FICO ratios.
         Args:
-            - x_data <numpy.ndarray>: ['score','repay_probability','race'] -> array of samples
+            - x_data <numpy.ndarray>: ['score','race'] -> array of samples
             - y_data <numpy.ndarray>: ['repay_indices'] -> array of samples
-            - race_ratio <list<float>>: contains two 2 floats between 0 and 1 (sum = 1), representing the ratio of black to white samples generated (Black,White)
             - set_size_upper_bound <int>: absolute upper bound of the size for the dataset (e.g 100,000)
         Returns:
             subset of x_data and y_data
     """
     # Black = 0; White = 1
-    # limits the absolute test_size if necessary
 
+    # limits the absolute test_size if necessary
     if len(y_data) > set_size_upper_bound:
         set_size = set_size_upper_bound
     else:
         set_size = len(y_data)
-    # set set sizes for each race
-    set_size_0 = int(set_size * race_ratio[0])
-    set_size_1 = int(set_size * race_ratio[1])
 
-    # number of samples for the Black group, according to the label ratio
+    # set sizes for each race
+    set_size_0 = int(set_size * 0.12)
+    set_size_1 = int(set_size * 0.88)
+
+    # number of samples for the Black and White group, according to the label ratios from Fico data
     num_0P = int(set_size_0 * 0.34)
     num_0N = int(set_size_0 * 0.66)
     num_1P = int(set_size_1 * 0.76)
@@ -81,7 +87,7 @@ def create_original_set_ratios(x_data, y_data, race_ratio, set_size_upper_bound)
 
     idx_1 = np.where(x_data[:, 1] == 1)[0]
 
-    # if group size numbers are larger than the available samples for that group adjust it
+    # if group size numbers are larger than the available samples for that group adjust the number of samples
     if len(idx_0P) < num_0P:
         num_0P = len(idx_0P)
         num_0N = int(num_0P/0.34 * 0.66)
@@ -109,33 +115,53 @@ def create_original_set_ratios(x_data, y_data, race_ratio, set_size_upper_bound)
     idx_0P = idx_0P[:num_0P]
     idx_1N = idx_1N[:num_1N]
     idx_1P = idx_1P[:num_1P]
+
     # concatenate indices
     idx = sorted(np.concatenate((idx_0N,idx_0P,idx_1N,idx_1P)))
-
+    # retuen subsets
     return x_data[idx,:], y_data[idx]
 
 
-def balance_test_set_ratios(x_data, y_data, test_set_bound):
-
+def balance_test_set_ratios(x_data, y_data, set_upper_bound):
+    """
+    Create a subset with balanced group and label ratios
+        Args:
+            - x_data <numpy.ndarray>: ['score','race'] -> array of samples
+            - y_data <numpy.ndarray>: ['repay_indices'] -> array of samples
+            - set_upper_bound <int>: absolute upper bound of the size for the dataset (e.g 100,000)
+        Returns:
+            subset of x_data and y_data
+    """
+    # get the indexes subsets for each group and label
     idx_0N = np.where((x_data[:, 1] == 0) & (y_data == 0))[0]
     idx_1N = np.where((x_data[:, 1] == 1) & (y_data == 0))[0]
     idx_0P = np.where((x_data[:, 1] == 0) & (y_data == 1))[0]
     idx_1P = np.where((x_data[:, 1] == 1) & (y_data == 1))[0]
-    num = min(len(idx_0N),len(idx_0P),len(idx_1N),len(idx_1P))
-    if num > test_set_bound * 0.25:
-        num = int(test_set_bound * 0.25)
 
+    # get the size of the smallest of those subsets
+    num = min(len(idx_0N),len(idx_0P),len(idx_1N),len(idx_1P))
+    # if the set would be to large reduce the size
+    if num > set_upper_bound * 0.25:
+        num = int(set_upper_bound * 0.25)
+    # samples the equal amount of samples from each subset
     idx_0N = idx_0N[:num]
     idx_1N = idx_1N[:num]
     idx_0P = idx_0P[:num]
     idx_1P = idx_1P[:num]
-
+    # merge the group indexes together to one list
     idx = sorted(np.concatenate((idx_0N,idx_0P,idx_1N,idx_1P)))
-
+    # retuen subsets
     return x_data[idx,:], y_data[idx]
 
 
 def print_type_ratios(x_data,y_data):
+    """
+    Print the size of the subgroups (demo-group and label) of the set
+        Args:
+            - x_data <numpy.ndarray>: ['score','repay_probability','race'] -> array of samples
+            - y_data <numpy.ndarray>: ['repay_indices'] -> array of samples
+    """
+    # get the samples for each subgroup
     idx_0N = np.where((x_data[:, 1] == 0) & (y_data == 0))[0]
     idx_1N = np.where((x_data[:, 1] == 1) & (y_data == 0))[0]
     idx_0P = np.where((x_data[:, 1] == 0) & (y_data == 1))[0]
@@ -144,21 +170,42 @@ def print_type_ratios(x_data,y_data):
 
 
 def prep_data(data, test_size, test_set_variant, set_bound,weight_index):
-    # might need to include standardscaler here
+    """
+    Prepare training and test set
+        Args:
+            - data <numpy.ndarray>: ['score','repay_probability','race','repay_indices'] -> array of samples
+            - test_size <int>: percentage of testset from the dataset
+            - test_set_variant <int>: 1-> balancing test set ; 2-> adjust testset to orignal FICO distributions
+            - set_upper_bound <int>: absolute bound of the testset (e.g.30,000)
+            - weight_index <int>:
 
+        Returns:
+            - X_train <numpy.ndarray>:
+            - X_test <numpy.ndarray>:
+            - y_train <numpy.ndarray>:
+            - y_test <numpy.ndarray>:
+            - race_train <numpy.ndarray>:
+            - race_test <numpy.ndarray>:
+            - sample_weight_train <numpy.ndarray>:
+            - sample_weight_test <numpy.ndarray>:
+    """
+    # get important cols from our data_add
     x = data[['score', 'race']].values
     y = data['repay_indices'].values
+
     print(' Whole set:', len(y))
     print_type_ratios(x,y)
+
+    # split into training and test set
     X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=test_size, random_state=42)
 
     print('Training set:', len(y_train))
     print_type_ratios(X_train,y_train)
 
-    #print_type_ratios(X_test,y_test)
-    if test_set_variant == 1:
+    # adjust test set if necessary
+    if test_set_variant == 1: # balanced set
         X_test, y_test = balance_test_set_ratios(X_test, y_test, set_bound[1])
-    if test_set_variant == 2:
+    if test_set_variant == 2: # original FICO set ratios
         X_test, y_test = create_original_set_ratios(X_test, y_test, [0.12,0.88], set_bound[1])
 
     print('Testing set:', len(y_test))
@@ -167,6 +214,7 @@ def prep_data(data, test_size, test_set_variant, set_bound,weight_index):
     # collect our sensitive attribute
     race_train = X_train[:, 1]
     race_test = X_test[:, 1]
+
     # weight_index: 1 means all equal weights
     if weight_index:
         #print('Sample weights are all equal.')
@@ -175,12 +223,21 @@ def prep_data(data, test_size, test_set_variant, set_bound,weight_index):
     # weight_index: 0 means use sample weights
     elif weight_index:
         print('Sample weights are NOT all equal.')
-        # TODO
-        #print('TODO')
+
     return X_train, X_test, y_train, y_test, race_train, race_test, sample_weight_train, sample_weight_test
 
 
 def get_metrics_df(models_dict, y_true, group):
+    """
+    Create dataframe with numerous metrics
+        Args:
+            - models_dict <dict>:
+            - y_true <numpy.ndarray>:  true labels
+            - group <numpy.ndarray>:  sensitive feature group of each sample
+        Returns:
+            dataframe containing results of numerous metrics for our data
+    """
+
     metrics_dict = {
         'Overall selection rate': (
             lambda x: selection_rate(y_true, x), True),
@@ -218,6 +275,13 @@ def get_metrics_df(models_dict, y_true, group):
 
 
 def get_classifier(model_name):
+    """
+        Picks the classification method
+        Args:
+            - model_name <str>: shortcut name for classification method
+        Returns:
+            classifier <object>: classification method
+    """
 
     if model_name == 'dt':
         # Initialize classifier:
@@ -238,8 +302,14 @@ def get_classifier(model_name):
 
 
 def get_constraint(constraint_str):
-  #set seed for consistent results with ExponentiatedGradient
-   #np.random.seed(0)
+    """
+        Picks the fairness method
+        Args:
+            - constraint_str <str>: shortcut name for fairness constraint
+        Returns:
+            constraint <object>: fairness  method
+    """
+
    if constraint_str == 'DP':
        constraint = DemographicParity()
    elif constraint_str == 'EO':
@@ -256,6 +326,22 @@ def get_constraint(constraint_str):
 
 
 def get_new_scores(X_test, y_predict, y_test, di_means, di_stds, race_test):
+    """
+        Calculate the new scores, after applying penalty (FP) and reward (TP) to positive samples
+        Args:
+            - X_test
+            - y_predict
+            - y_test
+            - di_means
+            - di_stds
+            - race_test
+
+        Returns:
+            - black_scores
+            - white_scores
+            - black_types
+            - white types
+    """
     black_scores = []
     black_types = []
     white_scores = []
@@ -318,7 +404,15 @@ def get_new_scores(X_test, y_predict, y_test, di_means, di_stds, race_test):
 
 # Reference: https://thispointer.com/python-dictionary-with-multiple-values-per-key/
 def add_values_in_dict(sample_dict, key, list_of_values):
-    """Append multiple values to a key in the given dictionary"""
+    """
+        Appending multiple values to a key in the given dictionary.
+        Args:
+            - sample_dict <dict>
+            - key <str>: kex for dict
+            - list_of_values <list>: values for dict
+        Returns:
+            - sample_dict <dict>: extended dictionary
+    """
     if key not in sample_dict:
         sample_dict[key] = list()
     sample_dict[key].extend(list_of_values)
@@ -327,6 +421,14 @@ def add_values_in_dict(sample_dict, key, list_of_values):
 
 # Reference: https://stackoverflow.com/questions/53013274/writing-data-to-csv-from-dictionaries-with-multiple-values-per-key
 def save_dict_in_csv(results_dict, fieldnames, name_csv):
+    """
+        Save dictionary as csv
+        Args:
+            - results_dict <dict> results that should be saved
+            - fieldnames <list>: the col names for csv
+            - name_csv <str>: name and path of csv file
+    """
+
     # Example for fieldnames:
     # overall_fieldnames = ['Run', 'Acc', 'F1micro/F1w/F1bsr', 'SelectionRate', 'TNR rate', 'TPR rate', 'FNER', 'FPER', 'DIB/DIW', 'DP Diff', 'EO Diff']
     # byrace_fieldnames = ['Run', 'Acc', 'F1micro/F1w/F1bsr', 'SelectionRate', 'TNR rate', 'TPR rate', 'FNER', 'FPER', 'DIB/DIW']
@@ -348,8 +450,9 @@ def save_dict_in_csv(results_dict, fieldnames, name_csv):
 
 
 def add_constraint(model, constraint_str, X_train, y_train, race_train, race_test, X_test, y_test, y_predict,di_means,di_stds, sample_weight_test, dashboard_bool):
-    # set seed for consistent results with ExponentiatedGradient
-    #np.random.seed(0)
+
+
+
     constraint = get_constraint(constraint_str)
 
     mitigator = ExponentiatedGradient(model, constraint)
@@ -365,6 +468,7 @@ def add_constraint(model, constraint_str, X_train, y_train, race_train, race_tes
 
 
 def classify(data_path,results_dir,weight_idx,testset_size, test_set_variant, set_bound, di_means, di_stds, models,constraints,save):
+
 
     warnings.filterwarnings('ignore', category=FutureWarning)
     # Load and Prepare data
