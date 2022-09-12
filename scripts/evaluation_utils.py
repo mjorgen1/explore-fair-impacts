@@ -101,6 +101,46 @@ def immediate_impact_csv(data_path= 'data/results/',b_or_w = 'Black', folders= [
 
 
 
+def delayed_impact_2csv(data_path= 'data/results/',b_or_w = 'Black', folders= ['dt','gnb','lgr','gbt']):
+
+    col_names_df = []
+
+    for i,f in enumerate(folders):
+        if b_or_w == 'Black':
+            path = f'{data_path}{f}/{f}_type_ratios.csv'
+            df = pd.read_csv(path,index_col=0)
+            df = df.filter(like='B')
+
+        else:
+            path = f'{data_path}{f}/{f}_type_ratios.csv'
+            df = pd.read_csv(path,index_col=0)
+            df = df.filter(like='W')
+        col_names_df.append(f'{f.upper()}')
+
+        df = 75*df.iloc[3,[6,0,1,5,3,2]] - 150*df.iloc[1,[6,0,1,5,3,2]]
+
+        if i == 0:
+            joined_df = df.iloc[:]
+        else:
+            joined_df = pd.concat([joined_df, df.iloc[:]], axis=1)
+
+    joined_df.set_axis(folders, axis=1)
+
+    # split dataframe after the two reduction algorithms
+    df = joined_df.iloc[:6,:]
+
+    # set new index
+    df['Constraint'] = ['Unmitigated', 'DP', 'EO', 'EOO','FPER','ERP']
+    df.set_index('Constraint',inplace=True)
+
+    df.columns = col_names_df
+
+    print('Group: ',b_or_w,'\n DataFrame: \n',df)
+
+    df.to_csv(f'{data_path}/{b_or_w}_DI.csv')
+
+
+
 
 def print_fairness_metrics(y_true, y_pred, sensitive_features, sample_weight):
     """
@@ -360,6 +400,46 @@ def evaluation_by_race(X_test, y_test, race_test, y_predict,di_means,di_stds, sa
 
     return results_black, results_white
 
+    def evaluation_by_gender_german(X_test, y_test, gender_test, y_predict,di_means,di_stds, sample_weight):
+        """
+        Splits the data into race and computes evaluation for each race.
+            Args:
+                - X_test <numpy.ndarray>: samples(scores) of the test set
+                - y_test <numpy.ndarray>: true labels of the test set
+                - race test <numpy.ndarray>: race indicator for samples in the test set
+                - y_predict <numpy.ndarray>: predicted labels for the test set
+                - sample_weight <c>:
+            Returns:
+                - results_black <>: eval results for group/race black
+                - results_white <>: eval results for group/race white
+        """
+        y_test_black, y_pred_black, sw_black, y_test_white, y_pred_white, sw_white = [], [], [], [], [], []
+
+        # splitting up the y_test and y_pred values by race to then use for race specific classification reports
+        for index, race in enumerate(gender_test):
+            if (race == 0):  # black
+                y_test_black.append(y_test[index])
+                y_pred_black.append(y_predict[index])
+                sw_black.append(sample_weight[index])
+            elif (race == 1):  # white
+                y_test_white.append(y_test[index])
+                y_pred_white.append(y_predict[index])
+                sw_white.append(sample_weight[index])
+
+            else:
+                print('You should not end up here...')
+
+        accuracy_black, cs_m_black, f1_m_black, f1_w_black, f1_b_black, tnr_black, tpr_black, fner_black, fper_black = analysis(y_test_black, y_pred_black, sw_black)
+        accuracy_white, cs_m_white, f1_m_white, f1_w_white, f1_b_white, tnr_white, tpr_white, fner_white, fper_white = analysis(y_test_white, y_pred_white, sw_white)
+        sr_bygroup = get_selection_rates(y_test, y_predict, gender_test, 1)  #sr_bygroup is a pandas series
+        sr_black = round(sr_bygroup.values[0]*100, 2)
+        sr_white = round(sr_bygroup.values[1]*100, 2)
+        di_black, di_white = (0.,0.)
+        results_black = [accuracy_black, cs_m_black, f1_m_black, f1_w_black, f1_b_black, sr_black, tnr_black, tpr_black, fner_black, fper_black, round(di_black, 2)]
+        results_white = [accuracy_white, cs_m_white, f1_m_white, f1_w_white, f1_b_white, sr_white, tnr_white, tpr_white, fner_white, fper_white, round(di_white, 2)]
+
+        return results_black, results_white
+
 
 def evaluating_model(constraint_str,X_test,y_test, y_pred,di_means,di_stds, sample_weight_test,race_test):
     """
@@ -392,3 +472,35 @@ def evaluating_model(constraint_str,X_test,y_test, y_pred,di_means,di_stds, samp
     #print('\n')
 
     return results_overall, results_black, results_white
+
+    def evaluating_model_german(constraint_str,X_test,y_test, y_pred,di_means,di_stds, sample_weight_test,gender_test):
+        """
+        Wrapper function which returns the eval results overall and by race
+            Args:
+                - constraint_str <numpy.ndarray>: true labels of the test set
+                - X_test <numpy.ndarray>: samples(scores) of the test set
+                - y_test <numpy.ndarray>: true labels of the test set
+                - y_pred <numpy.ndarray>: predicted labels for the test set
+                - sample_weight_test <>:
+                - race test <numpy.ndarray>: race indicator for samples in the test set
+            Returns:
+                - results_overall <list>: wrapper list with eval results overall
+                - results_black <list>: wrapper list with eval results black
+                - results_white <list>: wrapper list with eval results white
+        """
+        overall_message = 'Evaluation of '+ constraint_str + '-constrained classifier overall:'
+        accuracy, cs_matrix, f1_micro, f1_weighted, f1_binary, tnr, tpr, fner, fper = analysis(y_test, y_pred, sample_weight_test)
+        sr = get_selection_rates(y_test, y_pred, gender_test, 0)
+        #print('\n')
+        di_B, di_W = (0.,0.)
+        #di_str = str(round(di_black, 2)) + '/' + str(round(di_white, 2))
+        #print('\nFairness metric evaluation of ', constraint_str, '-constrained classifier')
+        dp_diff, eod_diff, eoo_dif, fpr_dif, er_dif = print_fairness_metrics(y_true=y_test, y_pred=y_pred, sensitive_features=gender_test, sample_weight=sample_weight_test)
+
+        results_overall = [accuracy, cs_matrix, f1_micro, f1_weighted, f1_binary, round(sr*100, 2), tnr, tpr, fner, fper, di_B,di_W, round(dp_diff*100, 2), round(eod_diff*100, 2), round(eoo_dif*100, 2), round(fpr_dif*100, 2), round(er_dif*100, 2)]
+
+        #print('Evaluation of ', constraint_str, '-constrained classifier by race:')
+        results_black, results_white = evaluation_by_race(X_test, y_test, gender_test, y_pred,di_means,di_stds, sample_weight_test)
+        #print('\n')
+
+        return results_overall, results_black, results_white

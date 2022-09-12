@@ -8,7 +8,7 @@ import yaml
 from yaml.loader import SafeLoader
 
 from sklearn.model_selection import train_test_split,StratifiedKFold
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LogisticRegression
@@ -35,19 +35,6 @@ def load_args(file):
             print('Arguments: ',data)
         except yaml.YAMLError as exc:
             print(exc)
-    return data
-
-
-def get_data(file):
-    """
-    Load data from csv file.
-        Args:
-            - file <str>: full path to .csv
-        Returns:
-            - data <pd-DataFrame> loaded data
-    """
-    data = pd.read_csv(file)
-    data[['score', 'race']] = data[['score', 'race']].astype(int)
     return data
 
 
@@ -402,6 +389,51 @@ def get_new_scores(X_test, y_predict, y_test, di_means, di_stds, race_test):
 
     return black_scores, white_scores, black_types, white_types
 
+def get_types(X_test, y_predict, y_test, race_test):
+    """
+        Calculate the new scores, after applying penalty (FP) and reward (TP) to positive samples
+        Args:
+            - X_test
+            - y_predict
+            - y_test
+            - di_means
+            - di_stds
+            - race_test
+
+        Returns:
+            - black_scores
+            - white_scores
+            - black_types
+            - white types
+    """
+    black_types = []
+    white_types = []
+
+    for index, label in enumerate(y_predict):
+
+        # first check for TP or TP
+        if label == 1 and y_test[index] == 1:  # if it's a TP
+            if race_test[index] == 0:  # black
+                black_types.append('TP')
+            elif race_test[index] == 1:  # white
+                white_types.append('TP')
+        elif label == 1 and y_test[index] == 0:  # if it's a FP
+            if race_test[index] == 0:  # black
+                black_types.append('FP')
+            elif race_test[index] == 1:  # white
+                white_types.append('FP')
+        elif label == 0 and y_test[index] == 0:  # TN, no change to credit score
+            if race_test[index] == 0:  # black
+                black_types.append('TN')
+            elif race_test[index] == 1:  # white
+                white_types.append('TN')
+        elif label == 0 and y_test[index] == 1:  # FN, no change to credit score
+            if race_test[index] == 0:  # black
+                black_types.append('FN')
+            elif race_test[index] == 1:  # white
+                white_types.append('FN')
+
+    return black_types, white_types
 
 # Reference: https://thispointer.com/python-dictionary-with-multiple-values-per-key/
 def add_values_in_dict(sample_dict, key, list_of_values):
@@ -473,7 +505,8 @@ def classify(data_path,results_dir,weight_idx,testset_size, test_set_variant, te
 
     warnings.filterwarnings('ignore', category=FutureWarning)
     # Load and Prepare data
-    data = get_data(data_path)
+    data = pd.read_csv(data_path)
+    data[['score', 'race']] = data[['score', 'race']].astype(int)
     x = data[['score', 'race']].values
     y = data['repay_indices'].values
 
@@ -587,6 +620,145 @@ def classify(data_path,results_dir,weight_idx,testset_size, test_set_variant, te
                 writer.writerow(scores_names)
                 writer.writerows(columns_data_scores)
                 f.close()
+            with open(results_path+model_str+'_all_types.csv',mode='w') as f:
+                writer = csv.writer(f)
+                writer.writerow(scores_names)
+                writer.writerows(columns_data_types)
+                f.close()
+
+
+
+
+def classify_german(data_path,results_dir,weight_idx,testset_size, test_set_variant, test_set_bound, di_means, di_stds, models,constraints,save):
+
+
+    warnings.filterwarnings('ignore', category=FutureWarning)
+    # Load and Prepare data
+    data = pd.read_csv(data_path, converters={'Sex': lambda x: int(x == 'male'), 'Risk': lambda x: int(x == 'good')})
+    x = data.loc[:,['Age','Job','Housing','Saving accounts','Checking account','Credit amount','Duration','Purpose','Sex']]#.values
+    y = data.loc[:,'Risk'].values
+
+    categorical_cols = ['Housing','Saving accounts','Checking account','Duration','Purpose']
+    le = LabelEncoder()
+    x[categorical_cols] = x[categorical_cols].apply(lambda col: le.fit_transform(col))
+    x = x.values
+
+    print(' Whole set:', len(y))
+
+    # split into training and test set
+    X_train, X_test, y_train, y_test = train_test_split(x, y, test_size = testset_size, random_state=42)
+
+    # collect our sensitive attribute
+    gender_train = X_train[:, -1]
+    gender_test = X_test[:, -1]
+
+    # weight_index: 1 means all equal weights
+    if weight_idx:
+        #print('Sample weights are all equal.')
+        sample_weight_train = np.ones(shape=(len(y_train),))
+        sample_weight_test = np.ones(shape=(len(y_test),))
+    # weight_index: 0 means use sample weights
+    elif weight_idx:
+        print('Sample weights are NOT all equal.')
+
+    visual_scores_by_race(results_dir,'all',x)
+    visual_repay_dist(results_dir,'all',x,y)
+    visual_scores_by_race(results_dir,'train',X_train)
+    visual_scores_by_race(results_dir,'test',X_test)
+    visual_repay_dist(results_dir,'train',X_train, y_train)
+    visual_repay_dist(results_dir,'test',X_test,y_test)
+
+    # split up X_test by race
+    X_test_b = []
+    X_test_w = []
+    y_test_b = []
+    y_test_w = []
+
+    for index in range(len(X_test)):
+        if gender_test[index] == 0:  # black
+            X_test_b.append(X_test[index][0])
+            y_test_b.append(y_test[index])
+        elif gender_test[index] == 1:  # white
+            X_test_w.append(X_test[index][0])
+            y_test_w.append(y_test[index])
+
+    for model_str in models.values():
+        print(model_str)
+        results_path = results_dir
+        results_path += f'{model_str}/'
+        os.makedirs(results_path, exist_ok=True)
+
+        models_dict = {}
+        overall_results_dict = {}
+        black_results_dict = {}
+        white_results_dict = {}
+        all_types = []
+        scores_names = []
+
+        T_test_b = ['TP' if e==1 else "TN" for e in y_test_b]
+        T_test_w = ['TP' if e==1 else "TN" for e in y_test_w]
+
+        all_types.extend([T_test_b,T_test_w])
+        scores_names.extend(['testB', 'testW'])
+
+        # Reference: https://www.datacamp.com/community/tutorials/decision-tree-classification-python
+        # train unconstrained model
+        classifier = get_classifier(model_str)
+        #np.random.seed(0)
+        model = classifier.fit(X_train,y_train, sample_weight_train)
+        y_predict = model.predict(X_test)
+
+        # Scores on test set
+        test_scores = model.predict_proba(X_test)[:, 1]
+        models_dict = {"Unmitigated": (y_predict, test_scores)}
+
+        # given predictions+outcomes, I'll need to do the same
+        #x = data[['score', 'race']].values
+        #y = data['repay_indices'].values
+        #scores = cross_val_score(model, x, y, cv=5, scoring='f1_weighted')
+
+        #save scores and types (TP,FP,TN,FN) in list
+        T_b, T_w = get_types(X_test, y_predict, y_test, gender_test)
+        all_types.extend([T_b,T_w])
+        scores_names.extend(['unmitB', 'unmitW'])
+
+        # evaluate model
+        constraint_str = 'Un-'
+        results_overall, results_black, results_white = evaluating_model(constraint_str,X_test,y_test, y_predict, di_means,di_stds, sample_weight_test,gender_test)
+
+        # adding results to dict
+        run_key = f'{model_str} Unmitigated'
+        overall_results_dict = add_values_in_dict(overall_results_dict, run_key, results_overall)
+        black_results_dict = add_values_in_dict(black_results_dict, run_key, results_black)
+        white_results_dict = add_values_in_dict(white_results_dict, run_key, results_white)
+
+        # train all constrained model for this model type
+        for constraint_str in constraints.values():
+
+            print(constraint_str)
+            mitigator, results_overall, results_black, results_white, y_pred_mitigated = add_constraint(model, constraint_str, X_train, y_train, gender_train, gender_test, X_test, y_test, y_predict,di_means,di_stds, sample_weight_test, dashboard_bool=False)
+
+            #save scores in list
+            T_b, T_w = get_types(X_test, y_pred_mitigated, y_test, gender_test)
+            all_types.extend([T_b,T_w])
+            scores_names.extend([f'{constraint_str.lower()}B', f'{constraint_str.lower()}W'])
+
+            run_key = f'{model_str} {constraint_str} Mitigated'
+            overall_results_dict = add_values_in_dict(overall_results_dict, run_key, results_overall)
+            black_results_dict = add_values_in_dict(black_results_dict, run_key, results_black)
+            white_results_dict = add_values_in_dict(white_results_dict, run_key, results_white)
+
+        # save evaluations
+        if save == True:
+            overall_fieldnames = ['Run', 'Acc', 'ConfMatrix','F1micro', 'F1weighted','F1binary', 'SelectionRate', 'TNR rate', 'TPR rate', 'FNER', 'FPER', 'DIB','DIW', 'DP Diff', 'EO Diff', 'TPR Diff', 'FPR Diff', 'ER Diff']
+            byrace_fieldnames = ['Run', 'Acc', 'ConfMatrix','F1micro', 'F1weighted','F1binary', 'SelectionRate', 'TNR rate', 'TPR rate', 'FNER', 'FPER', 'DI']
+            save_dict_in_csv(overall_results_dict, overall_fieldnames, results_path+model_str+'_overall_results.csv')
+            save_dict_in_csv(black_results_dict, byrace_fieldnames, results_path+model_str+'_black_results.csv')
+            save_dict_in_csv(white_results_dict, byrace_fieldnames, results_path+model_str+'_white_results.csv')
+
+            # Save overall score results
+            columns_data_types = zip_longest(*all_types)
+
             with open(results_path+model_str+'_all_types.csv',mode='w') as f:
                 writer = csv.writer(f)
                 writer.writerow(scores_names)

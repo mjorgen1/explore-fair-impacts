@@ -1,6 +1,6 @@
 
-data_path: 'data/synthetic_ds2/Demo-0-Lab-0.csv'
-results_dir: 'results/base_distris/std15_m100/'
+data_path: 'data/raw/german_credit_data.csv'
+results_dir: 'results/german_all/'
 weight_idx: 1
 testset_size: 0.3
 test_set_variant: 0 # 1= balanced testset 0= default 2= original,true FICO distribution
@@ -14,7 +14,7 @@ di_stds:
 models:
   Decision Tree: 'dt'
   Gaussian Naive Bayes: 'gnb'
-  Logistic Regression: 'lgr'
+  #Logistic Regression: 'lgr'
   Gradient_Boosted_Trees: 'gbt'
 constraints:
   Demografic Parity: 'DP'

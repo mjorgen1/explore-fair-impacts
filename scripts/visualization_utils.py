@@ -154,7 +154,7 @@ def immediate_impact_bar_plot(data_path, b_or_w = 'Black',classifier= ['DT','GNB
 
     line = []
     for i,c in enumerate(classifier):
-        path = f'{data_path}{b_or_w}_FN_I.csv'
+        path = f'{data_path}{b_or_w}_I.csv'
         df = pd.read_csv(path)
         df = df.set_index('Constraint')
         df = df.loc[:,c]
