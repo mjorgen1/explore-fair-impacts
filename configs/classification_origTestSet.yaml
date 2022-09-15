@@ -1,16 +1,16 @@
 
-data_path: 'data/synthetic_ds2/Demo-i-Lab-i.csv'
-results_dir: 'results/syn_orig/ii/'
+data_path: 'data/synthetic_ds/Demo-i-Lab-b.csv'
+results_dir: 'results/syn_orig/ib/'
 weight_idx: 1
 testset_size: 0.3
 test_set_variant: 2 # 1= balanced testset 0= default 2= original,true FICO distribution
 test_set_bound: 30000 # upper bound for test_set size
 di_means:
-  - 100
-  - -100
+  - 75
+  - -150
 di_stds:
-  - 100
-  - 100
+  - 15
+  - 15
 models:
   Decision Tree: 'dt'
   Gaussian Naive Bayes: 'gnb'

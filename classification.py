@@ -13,6 +13,5 @@ if __name__ == '__main__':
         args = load_args(f'configs/{args.config}.yaml')
     except:
         print(f'File does not exist: configs/{args.config}.yaml')
-        args = load_args('configs/classification.yaml')
 
     classify(**args)

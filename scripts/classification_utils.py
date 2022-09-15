@@ -19,8 +19,8 @@ from sklearn.metrics import classification_report, confusion_matrix, accuracy_sc
 from fairlearn.reductions import ExponentiatedGradient, DemographicParity, EqualizedOdds, TruePositiveRateParity, FalsePositiveRateParity, ErrorRateParity, BoundedGroupLoss
 from fairlearn.metrics import *
 from scripts.evaluation_utils import evaluating_model
-from scripts.visualization_utils import visual_repay_dist, visual_scores_by_race
-
+from scripts.visualization_utils import visual_repay_dist, visual_scores_by_race, visual_label_dist_german
+from sklearn.exceptions import ConvergenceWarning
 def load_args(file):
     """
     Load args and run some basic checks.
@@ -122,10 +122,10 @@ def balance_test_set_ratios(x_data, y_data, set_upper_bound):
             subset of x_data and y_data
     """
     # get the indexes subsets for each group and label
-    idx_0N = np.where((x_data[:, 1] == 0) & (y_data == 0))[0]
-    idx_1N = np.where((x_data[:, 1] == 1) & (y_data == 0))[0]
-    idx_0P = np.where((x_data[:, 1] == 0) & (y_data == 1))[0]
-    idx_1P = np.where((x_data[:, 1] == 1) & (y_data == 1))[0]
+    idx_0N = np.where((x_data[:, -1] == 0) & (y_data == 0))[0]
+    idx_1N = np.where((x_data[:, -1] == 1) & (y_data == 0))[0]
+    idx_0P = np.where((x_data[:, -1] == 0) & (y_data == 1))[0]
+    idx_1P = np.where((x_data[:, -1] == 1) & (y_data == 1))[0]
 
     # get the size of the smallest of those subsets
     num = min(len(idx_0N),len(idx_0P),len(idx_1N),len(idx_1P))
@@ -629,29 +629,35 @@ def classify(data_path,results_dir,weight_idx,testset_size, test_set_variant, te
 
 
 
-def classify_german(data_path,results_dir,weight_idx,testset_size, test_set_variant, test_set_bound, di_means, di_stds, models,constraints,save):
+def classify_german(data_path,results_dir,weight_idx,testset_size,balance_bool, models,constraints,save):
 
 
     warnings.filterwarnings('ignore', category=FutureWarning)
-    # Load and Prepare data
-    data = pd.read_csv(data_path, converters={'Sex': lambda x: int(x == 'male'), 'Risk': lambda x: int(x == 'good')})
-    x = data.loc[:,['Age','Job','Housing','Saving accounts','Checking account','Credit amount','Duration','Purpose','Sex']]#.values
-    y = data.loc[:,'Risk'].values
+    warnings.filterwarnings('ignore', category=ConvergenceWarning, module='sklearn')
 
-    categorical_cols = ['Housing','Saving accounts','Checking account','Duration','Purpose']
-    le = LabelEncoder()
-    x[categorical_cols] = x[categorical_cols].apply(lambda col: le.fit_transform(col))
-    x = x.values
+    # Load and Prepare data
+    data = pd.read_csv(data_path)
+    #x = data.loc[:,["Duration","Checking account",  "Credit History", "Purpose", "Credit amount", "Savings account",
+    #     "Present employment","Installment rate", "Other debtors", "Present residence", "Propety", "Other installment plans", "Hounsing", "No of credits", "Job", "Dependent People", "Telephone","Foreign worker",'Sex', "Age"]].values
+    x = data.loc[:,["Checking account",  "Credit History", "Credit amount", "Savings account",
+         "Installment rate", "No of credits", "Job", "Dependent People", "Telephone",'Sex']].values
+
+    y = data.loc[:,'Risk'].values
 
     print(' Whole set:', len(y))
 
     # split into training and test set
     X_train, X_test, y_train, y_test = train_test_split(x, y, test_size = testset_size, random_state=42)
 
+    if balance_bool:
+        X_train, y_train = balance_test_set_ratios(X_train, y_train, 1000)
+        #X_test, y_test = balance_test_set_ratios(X_test, y_test, 1000)
+
     # collect our sensitive attribute
     gender_train = X_train[:, -1]
     gender_test = X_test[:, -1]
-
+    print(' train:', len(gender_train))
+    print(' test:', len(gender_test))
     # weight_index: 1 means all equal weights
     if weight_idx:
         #print('Sample weights are all equal.')
@@ -661,12 +667,9 @@ def classify_german(data_path,results_dir,weight_idx,testset_size, test_set_vari
     elif weight_idx:
         print('Sample weights are NOT all equal.')
 
-    visual_scores_by_race(results_dir,'all',x)
-    visual_repay_dist(results_dir,'all',x,y)
-    visual_scores_by_race(results_dir,'train',X_train)
-    visual_scores_by_race(results_dir,'test',X_test)
-    visual_repay_dist(results_dir,'train',X_train, y_train)
-    visual_repay_dist(results_dir,'test',X_test,y_test)
+    visual_label_dist_german(results_dir,'all',x,y)
+    visual_label_dist_german(results_dir,'train',X_train, y_train)
+    visual_label_dist_german(results_dir,'test',X_test,y_test)
 
     # split up X_test by race
     X_test_b = []
@@ -700,7 +703,6 @@ def classify_german(data_path,results_dir,weight_idx,testset_size, test_set_vari
 
         all_types.extend([T_test_b,T_test_w])
         scores_names.extend(['testB', 'testW'])
-
         # Reference: https://www.datacamp.com/community/tutorials/decision-tree-classification-python
         # train unconstrained model
         classifier = get_classifier(model_str)
@@ -721,11 +723,9 @@ def classify_german(data_path,results_dir,weight_idx,testset_size, test_set_vari
         T_b, T_w = get_types(X_test, y_predict, y_test, gender_test)
         all_types.extend([T_b,T_w])
         scores_names.extend(['unmitB', 'unmitW'])
-
         # evaluate model
         constraint_str = 'Un-'
-        results_overall, results_black, results_white = evaluating_model(constraint_str,X_test,y_test, y_predict, di_means,di_stds, sample_weight_test,gender_test)
-
+        results_overall, results_black, results_white = evaluating_model(constraint_str,X_test,y_test, y_predict, (0,0),(0,0), sample_weight_test,gender_test)
         # adding results to dict
         run_key = f'{model_str} Unmitigated'
         overall_results_dict = add_values_in_dict(overall_results_dict, run_key, results_overall)
@@ -736,7 +736,7 @@ def classify_german(data_path,results_dir,weight_idx,testset_size, test_set_vari
         for constraint_str in constraints.values():
 
             print(constraint_str)
-            mitigator, results_overall, results_black, results_white, y_pred_mitigated = add_constraint(model, constraint_str, X_train, y_train, gender_train, gender_test, X_test, y_test, y_predict,di_means,di_stds, sample_weight_test, dashboard_bool=False)
+            mitigator, results_overall, results_black, results_white, y_pred_mitigated = add_constraint(model, constraint_str, X_train, y_train, gender_train, gender_test, X_test, y_test, y_predict,(0,0),(0,0), sample_weight_test, dashboard_bool=False)
 
             #save scores in list
             T_b, T_w = get_types(X_test, y_pred_mitigated, y_test, gender_test)
