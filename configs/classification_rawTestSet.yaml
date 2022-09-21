@@ -1,6 +1,6 @@
 
-data_path: 'data/synthetic_ds/Demo-i-Lab-0.csv'
-results_dir: 'results/syn_raw/i0/'
+data_path: 'data/synthetic_ds/Demo-0-Lab-0.csv'
+results_dir: 'results/testing/'
 weight_idx: 1
 testset_size: 0.3
 test_set_variant: 0 # 1= balanced testset 0= default 2= original,true FICO distribution

@@ -1,3 +1,4 @@
+# imports
 import numpy as np
 import pandas as pd
 import random
@@ -5,9 +6,10 @@ from random import choices
 import yaml
 from yaml.loader import SafeLoader
 
-# import all of our files
+# import files
 import Liu_paper_code.fico as fico
 import Liu_paper_code.distribution_to_loans_outcomes as dlo
+
 
 def load_args(file):
     """
@@ -98,11 +100,10 @@ def load_and_parse(data_dir):
     return scores_list, repay_A, repay_B, pi_A, pi_B
 
 
-# Round function described below used, round(float_num, num_of_decimals)
-# Reference: https://www.guru99.com/round-function-python.html
 def get_repay_probabilities(samples, scores_arr, repay_probs, round_num):
     """
     Gets the rounded repay probabilities for all samples.
+    # Reference: https://www.guru99.com/round-function-python.html
         Args:
             - samples <numpy.ndarray>: all scores
             - repay_probs <numpy.ndarray>: repay probabilities
@@ -131,6 +132,7 @@ def get_repay_probabilities(samples, scores_arr, repay_probs, round_num):
 def get_scores(scores, round_num):
     """
     Returns rounded scores.
+    # Reference: https://www.guru99.com/round-function-python.html
         Args:
             - scores <list>:
             - round_num <int> {0,1,2}:
@@ -165,6 +167,10 @@ def adjust_set_ratios(x_data, y_data, label_ratio, race_ratio, set_size_upper_bo
             subset of x_data and y_data
     """
     # Black = 0; White = 1
+
+    # label ratio White (1) group
+    white_lab_ratio = [0.24,0.76]
+
     # limits the absolute test_size if necessary
     if len(y_data) > set_size_upper_bound:
         set_size = set_size_upper_bound
@@ -177,13 +183,12 @@ def adjust_set_ratios(x_data, y_data, label_ratio, race_ratio, set_size_upper_bo
     # number of samples for the Black group, according to the label ratio
     num_0P = int(round(num_0 * label_ratio[1]))
     num_0N = int(round(num_0 * label_ratio[0]))
-    num_1P = int(round(num_1 * 0.76))
-    num_1N = int(round(num_1 * 0.24))
+    num_1P = int(round(num_1 * white_lab_ratio[1]))
+    num_1N = int(round(num_1 * white_lab_ratio[0]))
 
     # getting the indices of each samples for each group
     idx_0N = np.where((x_data[:, 2] == 0) & (y_data == 0))[0]
     idx_0P = np.where((x_data[:, 2] == 0) & (y_data == 1))[0]
-
     idx_1N = np.where((x_data[:, 2] == 1) & (y_data == 0))[0]
     idx_1P = np.where((x_data[:, 2] == 1) & (y_data == 1))[0]
 
@@ -191,21 +196,21 @@ def adjust_set_ratios(x_data, y_data, label_ratio, race_ratio, set_size_upper_bo
     if len(idx_0P) < num_0P:
         num_0P = len(idx_0P)
         num_0N = int(round(num_0P/label_ratio[1] * label_ratio[0]))
-        num_1P =  int(round((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * 0.76))
-        num_1N =  int(round((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * 0.24))
+        num_1P =  int(round((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * white_lab_ratio[1]))
+        num_1N =  int(round((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * white_lab_ratio[0]))
     if len(idx_0N) < num_0N:
         num_0N = len(idx_0N)
         num_0P = int(round(num_0N/label_ratio[0] * label_ratio[1]))
-        num_1P =  int(round((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * 0.76))
-        num_1N =  int(round((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * 0.24))
+        num_1P =  int(round((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * white_lab_ratio[1]))
+        num_1N =  int(round((num_0N + num_0P)/race_ratio[0] * race_ratio[1] * white_lab_ratio[0]))
     if len(idx_1P) < num_1P:
         num_1P = len(idx_1P)
-        num_1N = int(round(num_1P/0.76 * 0.24))
+        num_1N = int(round(num_1P/white_lab_ratio[1] * white_lab_ratio[0]))
         num_0P =  int(round((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * label_ratio[1]))
         num_0N =  int(round((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * label_ratio[0]))
     if len(idx_1N) < num_1N:
         num_1N = len(idx_1N)
-        num_1P = int(round(num_1N/0.24 * 0.76))
+        num_1P = int(round(num_1N/white_lab_ratio[0] * white_lab_ratio[1]))
         num_0P =  int(round((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * label_ratio[1]))
         num_0N =  int(round((num_1N + num_1P)/race_ratio[1] * race_ratio[0] * label_ratio[0]))
 
@@ -227,13 +232,13 @@ def sample(group_size_ratio, order_of_magnitude, shuffle_seed,scores_arr, pi_A, 
             - group_size_ratio <list<float>>: contains two 2 floats between 0 and 1 (sum = 1), representing the ratio of black to white samples generated (Black,White)
             - order_of_magnitude <int>: total size of the datase
             - shuffle_seed <int>: Seed to control randomness inthe shuffeling of the dataset
-            - scores_arr <list>: list with all avalible scores
+            - scores_arr <list>:  all avalible scores
             - pi_A <numpy.ndarray>: pmf of group A
             - pi_B <numpy.ndarray>: pmf of group B
             - repay_A_arr <numpy.ndarray>: repay probabilities group A
             - repay_B_arr <numpy.ndarray>: repay probabilities group B
         Returns:
-            - data_all_df_shuffled <pd.DataFrame>: shuffled dataFrame
+            - data_all_df_shuffled <pd.DataFrame>: shuffled dataset
     """
     num_A_samples = int(group_size_ratio[0] * order_of_magnitude)
     num_B_samples = int(group_size_ratio[1] * order_of_magnitude)
@@ -271,12 +276,13 @@ def sample(group_size_ratio, order_of_magnitude, shuffle_seed,scores_arr, pi_A, 
     data_all_df_shuffled = data_all_df.sample(frac=1).reset_index(drop=True)
     #print(data_all_df_shuffled)
 
-    # Add Final Column to dataframe, repay indices
+    # Add Final Column to dataframe and repay indices
     # repay: 1.0, default: 0.0
     probabilities = data_all_df_shuffled['repay_probability']
     repay_indices = []
     # Create a random num and then have that decide given a prob if the person gets a loan or not
     # (e.g. If 80% prob, then calculate a random num, then if that is below they will get loan, if above, then they don't)
+    # creating binary labels ourt of probabilistic ones
     for index, prob in enumerate(probabilities):
         rand_num = random.randint(0,1000)/10
         if rand_num > prob:  # default
@@ -291,7 +297,7 @@ def sample(group_size_ratio, order_of_magnitude, shuffle_seed,scores_arr, pi_A, 
 
 def load_sample_and_save(data_dir, result_path, order_of_magnitude, group_size_ratio, black_label_ratio, set_size, round_num_scores, shuffle_seed = None):
     """
-    Complete pipeline of loading, parsing,sampling and saving of the created synthetic dataset.
+    Complete pipeline of loading, parsing, sampling and saving of the created synthetic dataset.
         Args:
             - data_dir <str>: Path to the directorz of the raw data
             - results_path <str>: Path for the data file, including its file_name
@@ -320,6 +326,7 @@ def load_sample_and_save(data_dir, result_path, order_of_magnitude, group_size_r
     # adjust the set according to the ratios specified
     x,y = adjust_set_ratios(x, y, black_label_ratio, group_size_ratio, set_size)
 
+    # integer to control randomnes of sampling process
     i = 1
     # as long as the set is to small, generate additional samples
     while len(y) < set_size:
@@ -335,7 +342,6 @@ def load_sample_and_save(data_dir, result_path, order_of_magnitude, group_size_r
 
         # adjust the set according to the ratios specified
         x,y = adjust_set_ratios(x,y, black_label_ratio, group_size_ratio, set_size)
-
 
     # merge x,y back into a DataFrame
     df = {'score':x[:,0],'repay_probability': x[:,1],'race':x[:,2],'repay_indices': y}

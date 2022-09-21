@@ -1,26 +1,21 @@
 import pandas as pd
 import numpy as np
-from itertools import zip_longest
 import csv
-import os
-import warnings
 import yaml
 from yaml.loader import SafeLoader
 
-from sklearn.model_selection import train_test_split,StratifiedKFold
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import cross_val_score
 from sklearn.ensemble import GradientBoostingClassifier
-from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, balanced_accuracy_score, roc_auc_score, f1_score
-
-from fairlearn.reductions import ExponentiatedGradient, DemographicParity, EqualizedOdds, TruePositiveRateParity, FalsePositiveRateParity, ErrorRateParity, BoundedGroupLoss
+from sklearn.metrics import balanced_accuracy_score, roc_auc_score
+from fairlearn.reductions import ExponentiatedGradient, DemographicParity, EqualizedOdds, TruePositiveRateParity,FalsePositiveRateParity, ErrorRateParity
 from fairlearn.metrics import *
+
 from scripts.evaluation_utils import evaluating_model
-from scripts.visualization_utils import visual_repay_dist, visual_scores_by_race, visual_label_dist_german
-from sklearn.exceptions import ConvergenceWarning
+
+
 def load_args(file):
     """
     Load args and run some basic checks.
@@ -160,23 +155,23 @@ def print_type_ratios(x_data,y_data):
 
 def prep_data(data, test_size, test_set_variant, test_set_bound,weight_index):
     """
-    Prepare training and test set
+    Prepare training and test set (a few extra steps, like changing test set composition)
         Args:
             - data <numpy.ndarray>: ['score','repay_probability','race','repay_indices'] -> array of samples
             - test_size <int>: percentage of testset from the dataset
             - test_set_variant <int>: 1-> balancing test set ; 2-> adjust testset to orignal FICO distributions
-            - set_upper_bound <int>: absolute bound of the testset (e.g.30,000)
-            - weight_index <int>:
+            - test_set_bound <int>: absolute upper bound of the testset (e.g.30,000)
+            - weight_index <int>: sample weights
 
         Returns:
-            - X_train <numpy.ndarray>:
-            - X_test <numpy.ndarray>:
-            - y_train <numpy.ndarray>:
-            - y_test <numpy.ndarray>:
-            - race_train <numpy.ndarray>:
-            - race_test <numpy.ndarray>:
-            - sample_weight_train <numpy.ndarray>:
-            - sample_weight_test <numpy.ndarray>:
+            - X_train <numpy.ndarray>: samples for training
+            - X_test <numpy.ndarray>: samples for tesing
+            - y_train <numpy.ndarray>: labels of training samples
+            - y_test <numpy.ndarray>: labels of test samples
+            - race_train <numpy.ndarray>: sensitive attribute of train samples
+            - race_test <numpy.ndarray>: sensitive attribute of test samples
+            - sample_weight_train <numpy.ndarray>: weights for training samples
+            - sample_weight_test <numpy.ndarray>: weights for test samples
     """
     # get important cols from our data_add
     x = data[['score', 'race']].values
@@ -271,7 +266,6 @@ def get_classifier(model_name):
         Returns:
             classifier <object>: classification method
     """
-
     if model_name == 'dt':
         # Initialize classifier:
         classifier = DecisionTreeClassifier()
@@ -292,7 +286,7 @@ def get_classifier(model_name):
 
 def get_constraint(constraint_str):
     """
-        Picks the fairness method
+        Picks the fairness contraint.
         Args:
             - constraint_str <str>: shortcut name for fairness constraint
         Returns:
@@ -315,27 +309,29 @@ def get_constraint(constraint_str):
 
 def get_new_scores(X_test, y_predict, y_test, di_means, di_stds, race_test):
     """
-        Calculate the new scores, after applying penalty (FP) and reward (TP) to positive samples
+        Calculate the new scores and retun the types (Tp,TP,FN,TN), after applying penalty (to FP) and reward (to TP) to positive samples
         Args:
-            - X_test
-            - y_predict
-            - y_test
-            - di_means
-            - di_stds
-            - race_test
+            - X_test <numpy.ndarray>: samples for testing
+            - y_predict <numpy.ndarray>: predicted test set labels a model
+            - y_test <numpy.ndarray>: predicted labels
+            - di_means <tuple>: means of the delayed impact distributions
+            - di_stds <tuple>: deviation of delayed impact distributions
+            - race_test <numpy.ndarray>: sensitive attribute of test samples
 
         Returns:
-            - black_scores
-            - white_scores
-            - black_types
-            - white types
+            - black_scores <list>: updated credit scores
+            - white_scores <list>: updated credit score  of testset samples of the advantaged group
+            - black_types <list>: type classification (TP,TP;FN,TN) of testset samples of the disadvantaged group
+            - white_types <list>: type classification (TP,TP;FN,TN) of testset samples of the advantaged group
     """
     black_scores = []
     black_types = []
     white_scores = []
     white_types = []
+    # credit score bounds
     up_bound = 850
     low_bound = 300
+    # reward and penalty distribution parameters
     reward_mu, penalty_mu = di_means
     reward_std, penalty_std = di_stds
 
@@ -389,22 +385,19 @@ def get_new_scores(X_test, y_predict, y_test, di_means, di_stds, race_test):
 
     return black_scores, white_scores, black_types, white_types
 
+
 def get_types(X_test, y_predict, y_test, race_test):
     """
-        Calculate the new scores, after applying penalty (FP) and reward (TP) to positive samples
+        Return the types (FP;TP;FN;TN) of all testset samples
         Args:
-            - X_test
-            - y_predict
-            - y_test
-            - di_means
-            - di_stds
-            - race_test
+            - X_test <numpy.ndarray>: samples for testing
+            - y_predict <numpy.ndarray>: predicted test set labels a model
+            - y_test <numpy.ndarray>: predicted labels
+            - race_test <numpy.ndarray>: sensitive attribute of test samples
 
         Returns:
-            - black_scores
-            - white_scores
-            - black_types
-            - white types
+            - black_types <list>: type classification (TP,TP;FN,TN) of testset samples of the disadvantaged group
+            - white_types <list>: type classification (TP,TP;FN,TN) of testset samples of the advantaged group
     """
     black_types = []
     white_types = []
@@ -422,12 +415,12 @@ def get_types(X_test, y_predict, y_test, race_test):
                 black_types.append('FP')
             elif race_test[index] == 1:  # white
                 white_types.append('FP')
-        elif label == 0 and y_test[index] == 0:  # TN, no change to credit score
+        elif label == 0 and y_test[index] == 0:  # TN
             if race_test[index] == 0:  # black
                 black_types.append('TN')
             elif race_test[index] == 1:  # white
                 white_types.append('TN')
-        elif label == 0 and y_test[index] == 1:  # FN, no change to credit score
+        elif label == 0 and y_test[index] == 1:  # FN
             if race_test[index] == 0:  # black
                 black_types.append('FN')
             elif race_test[index] == 1:  # white
@@ -435,10 +428,11 @@ def get_types(X_test, y_predict, y_test, race_test):
 
     return black_types, white_types
 
-# Reference: https://thispointer.com/python-dictionary-with-multiple-values-per-key/
+
 def add_values_in_dict(sample_dict, key, list_of_values):
     """
         Appending multiple values to a key in the given dictionary.
+        # Reference: https://thispointer.com/python-dictionary-with-multiple-values-per-key/
         Args:
             - sample_dict <dict>
             - key <str>: kex for dict
@@ -452,10 +446,10 @@ def add_values_in_dict(sample_dict, key, list_of_values):
     return sample_dict
 
 
-# Reference: https://stackoverflow.com/questions/53013274/writing-data-to-csv-from-dictionaries-with-multiple-values-per-key
 def save_dict_in_csv(results_dict, fieldnames, name_csv):
     """
-        Save dictionary as csv
+        Save dictionary as csv.
+        # Reference: https://stackoverflow.com/questions/53013274/writing-data-to-csv-from-dictionaries-with-multiple-values-per-key
         Args:
             - results_dict <dict> results that should be saved
             - fieldnames <list>: the col names for csv
@@ -482,9 +476,31 @@ def save_dict_in_csv(results_dict, fieldnames, name_csv):
         csv_file.close()
 
 
-def add_constraint(model, constraint_str, X_train, y_train, race_train, race_test, X_test, y_test, y_predict,di_means,di_stds, sample_weight_test, dashboard_bool):
+def add_constraint_and_evaluate(model, constraint_str, X_train, y_train, race_train, race_test, X_test, y_test, y_predict,di_means,di_stds, sample_weight_test, dashboard_bool):
+    """
+    Applying fairness constraint and reduction algorithm on the model.
+        Args:
+            - model <object>: classifier
+            - constraint str <str>: indicator for fairness constraint
+            - X_train <numpy.ndarray>: samples for training
+            - y_train <numpy.ndarray>: labels of training samples
+            - race_train <numpy.ndarray>: sensitive attribute of train samples
+            - race_test <numpy.ndarray>: sensitive attribute of test samples
+            - X_test <numpy.ndarray>: samples for testing
+            - y_test <numpy.ndarray>: predicted labels
+            - y_predicted <numpy.ndarray>: uncontrained model prediction of labels from test set
+            - di_means <tuple>:means of the delayed impact distributions
+            - di_stds <tuple>: deviation of delyed impact distributions
+            - sample_weight_test <numpy.ndarray>: weights for test samples
+            - dashboard_bool <bool>: can be used to display FairnessDashboard
 
-
+        Returns:
+            - mitigator <object>: model trained with contraint
+            - results_overall <list>: wrapper list with eval results overall
+            - results_0 <list>: wrapper list with eval results disadvantaged group
+            - results_1 <list>: wrapper list with eval results advantaged group
+            - y_pred_mitigated <numpy.ndarray>: predicted test set labels of mitigated,contrained model
+    """
 
     constraint = get_constraint(constraint_str)
 
@@ -492,275 +508,9 @@ def add_constraint(model, constraint_str, X_train, y_train, race_train, race_tes
     mitigator.fit(X_train, y_train, sensitive_features=race_train)
     y_pred_mitigated = mitigator.predict(X_test) #y_pred_mitigated
 
-    results_overall, results_black, results_white = evaluating_model(constraint_str,X_test,y_test, y_pred_mitigated, di_means,di_stds, sample_weight_test,race_test)
+    results_overall, results_0, results_1 = evaluating_model(constraint_str,X_test,y_test, y_pred_mitigated, di_means,di_stds, sample_weight_test,race_test)
 
     if dashboard_bool:
         pass
         #FairnessDashboard(sensitive_features=race_test,y_true=y_test,y_pred={"initial model": y_predict, "mitigated model": y_pred_mitigated})
-    return mitigator, results_overall, results_black, results_white, y_pred_mitigated
-
-
-def classify(data_path,results_dir,weight_idx,testset_size, test_set_variant, test_set_bound, di_means, di_stds, models,constraints,save):
-
-
-    warnings.filterwarnings('ignore', category=FutureWarning)
-    # Load and Prepare data
-    data = pd.read_csv(data_path)
-    data[['score', 'race']] = data[['score', 'race']].astype(int)
-    x = data[['score', 'race']].values
-    y = data['repay_indices'].values
-
-
-    X_train, X_test, y_train, y_test, race_train, race_test, sample_weight_train, sample_weight_test = prep_data(data, testset_size,test_set_variant,test_set_bound, weight_idx)
-
-    visual_scores_by_race(results_dir,'all',x)
-    visual_repay_dist(results_dir,'all',x,y)
-    visual_scores_by_race(results_dir,'train',X_train)
-    visual_scores_by_race(results_dir,'test',X_test)
-    visual_repay_dist(results_dir,'train',X_train, y_train)
-    visual_repay_dist(results_dir,'test',X_test,y_test)
-    # split up X_test by race
-    X_test_b = []
-    X_test_w = []
-    y_test_b = []
-    y_test_w = []
-
-    for index in range(len(X_test)):
-        if race_test[index] == 0:  # black
-            X_test_b.append(X_test[index][0])
-            y_test_b.append(y_test[index])
-        elif race_test[index] == 1:  # white
-            X_test_w.append(X_test[index][0])
-            y_test_w.append(y_test[index])
-
-    for model_str in models.values():
-        print(model_str)
-        results_path = results_dir
-        results_path += f'{model_str}/'
-        os.makedirs(results_path, exist_ok=True)
-
-        models_dict = {}
-        overall_results_dict = {}
-        black_results_dict = {}
-        white_results_dict = {}
-        all_scores = []
-        all_types = []
-        scores_names = []
-
-        T_test_b = ['TP' if e==1 else "TN" for e in y_test_b]
-        T_test_w = ['TP' if e==1 else "TN" for e in y_test_w]
-
-        all_types.extend([T_test_b,T_test_w])
-        all_scores.extend([X_test_b,X_test_w])
-        scores_names.extend(['testB', 'testW'])
-
-        # Reference: https://www.datacamp.com/community/tutorials/decision-tree-classification-python
-        # train unconstrained model
-        classifier = get_classifier(model_str)
-        #np.random.seed(0)
-        model = classifier.fit(X_train,y_train, sample_weight_train)
-        y_predict = model.predict(X_test)
-
-        # Scores on test set
-        test_scores = model.predict_proba(X_test)[:, 1]
-        models_dict = {"Unmitigated": (y_predict, test_scores)}
-
-        # given predictions+outcomes, I'll need to do the same
-        #x = data[['score', 'race']].values
-        #y = data['repay_indices'].values
-        #scores = cross_val_score(model, x, y, cv=5, scoring='f1_weighted')
-
-        #save scores and types (TP,FP,TN,FN) in list
-        X_b, X_w, T_b, T_w = get_new_scores(X_test, y_predict, y_test, di_means, di_stds, race_test)
-        all_types.extend([T_b,T_w])
-        all_scores.extend([X_b,X_w])
-        scores_names.extend(['unmitB', 'unmitW'])
-
-        # evaluate model
-        constraint_str = 'Un-'
-        results_overall, results_black, results_white = evaluating_model(constraint_str,X_test,y_test, y_predict, di_means,di_stds, sample_weight_test,race_test)
-
-        # adding results to dict
-        run_key = f'{model_str} Unmitigated'
-        overall_results_dict = add_values_in_dict(overall_results_dict, run_key, results_overall)
-        black_results_dict = add_values_in_dict(black_results_dict, run_key, results_black)
-        white_results_dict = add_values_in_dict(white_results_dict, run_key, results_white)
-
-        # train all constrained model for this model type
-        for constraint_str in constraints.values():
-
-            print(constraint_str)
-            mitigator, results_overall, results_black, results_white, y_pred_mitigated = add_constraint(model, constraint_str, X_train, y_train, race_train, race_test, X_test, y_test, y_predict,di_means,di_stds, sample_weight_test, dashboard_bool=False)
-
-            #save scores in list
-            X_b, X_w, T_b, T_w = get_new_scores(X_test, y_pred_mitigated, y_test, di_means, di_stds, race_test)
-            all_types.extend([T_b,T_w])
-            all_scores.extend([X_b,X_w])
-            scores_names.extend([f'{constraint_str.lower()}B', f'{constraint_str.lower()}W'])
-
-            run_key = f'{model_str} {constraint_str} Mitigated'
-            overall_results_dict = add_values_in_dict(overall_results_dict, run_key, results_overall)
-            black_results_dict = add_values_in_dict(black_results_dict, run_key, results_black)
-            white_results_dict = add_values_in_dict(white_results_dict, run_key, results_white)
-
-        # save evaluations
-        if save == True:
-            overall_fieldnames = ['Run', 'Acc', 'ConfMatrix','F1micro', 'F1weighted','F1binary', 'SelectionRate', 'TNR rate', 'TPR rate', 'FNER', 'FPER', 'DIB','DIW', 'DP Diff', 'EO Diff', 'TPR Diff', 'FPR Diff', 'ER Diff']
-            byrace_fieldnames = ['Run', 'Acc', 'ConfMatrix','F1micro', 'F1weighted','F1binary', 'SelectionRate', 'TNR rate', 'TPR rate', 'FNER', 'FPER', 'DI']
-            save_dict_in_csv(overall_results_dict, overall_fieldnames, results_path+model_str+'_overall_results.csv')
-            save_dict_in_csv(black_results_dict, byrace_fieldnames, results_path+model_str+'_black_results.csv')
-            save_dict_in_csv(white_results_dict, byrace_fieldnames, results_path+model_str+'_white_results.csv')
-
-            # Save overall score results
-            columns_data_scores = zip_longest(*all_scores)
-            columns_data_types = zip_longest(*all_types)
-
-            with open(results_path+model_str+'_all_scores.csv',mode='w') as f:
-                writer = csv.writer(f)
-                writer.writerow(scores_names)
-                writer.writerows(columns_data_scores)
-                f.close()
-            with open(results_path+model_str+'_all_types.csv',mode='w') as f:
-                writer = csv.writer(f)
-                writer.writerow(scores_names)
-                writer.writerows(columns_data_types)
-                f.close()
-
-
-
-
-def classify_german(data_path,results_dir,weight_idx,testset_size,balance_bool, models,constraints,save):
-
-
-    warnings.filterwarnings('ignore', category=FutureWarning)
-    warnings.filterwarnings('ignore', category=ConvergenceWarning, module='sklearn')
-
-    # Load and Prepare data
-    data = pd.read_csv(data_path)
-    #x = data.loc[:,["Duration","Checking account",  "Credit History", "Purpose", "Credit amount", "Savings account",
-    #     "Present employment","Installment rate", "Other debtors", "Present residence", "Propety", "Other installment plans", "Hounsing", "No of credits", "Job", "Dependent People", "Telephone","Foreign worker",'Sex', "Age"]].values
-    x = data.loc[:,["Checking account",  "Credit History", "Credit amount", "Savings account",
-         "Installment rate", "No of credits", "Job", "Dependent People", "Telephone",'Sex']].values
-
-    y = data.loc[:,'Risk'].values
-
-    print(' Whole set:', len(y))
-
-    # split into training and test set
-    X_train, X_test, y_train, y_test = train_test_split(x, y, test_size = testset_size, random_state=42)
-
-    if balance_bool:
-        X_train, y_train = balance_test_set_ratios(X_train, y_train, 1000)
-        #X_test, y_test = balance_test_set_ratios(X_test, y_test, 1000)
-
-    # collect our sensitive attribute
-    gender_train = X_train[:, -1]
-    gender_test = X_test[:, -1]
-    print(' train:', len(gender_train))
-    print(' test:', len(gender_test))
-    # weight_index: 1 means all equal weights
-    if weight_idx:
-        #print('Sample weights are all equal.')
-        sample_weight_train = np.ones(shape=(len(y_train),))
-        sample_weight_test = np.ones(shape=(len(y_test),))
-    # weight_index: 0 means use sample weights
-    elif weight_idx:
-        print('Sample weights are NOT all equal.')
-
-    visual_label_dist_german(results_dir,'all',x,y)
-    visual_label_dist_german(results_dir,'train',X_train, y_train)
-    visual_label_dist_german(results_dir,'test',X_test,y_test)
-
-    # split up X_test by race
-    X_test_b = []
-    X_test_w = []
-    y_test_b = []
-    y_test_w = []
-
-    for index in range(len(X_test)):
-        if gender_test[index] == 0:  # black
-            X_test_b.append(X_test[index][0])
-            y_test_b.append(y_test[index])
-        elif gender_test[index] == 1:  # white
-            X_test_w.append(X_test[index][0])
-            y_test_w.append(y_test[index])
-
-    for model_str in models.values():
-        print(model_str)
-        results_path = results_dir
-        results_path += f'{model_str}/'
-        os.makedirs(results_path, exist_ok=True)
-
-        models_dict = {}
-        overall_results_dict = {}
-        black_results_dict = {}
-        white_results_dict = {}
-        all_types = []
-        scores_names = []
-
-        T_test_b = ['TP' if e==1 else "TN" for e in y_test_b]
-        T_test_w = ['TP' if e==1 else "TN" for e in y_test_w]
-
-        all_types.extend([T_test_b,T_test_w])
-        scores_names.extend(['testB', 'testW'])
-        # Reference: https://www.datacamp.com/community/tutorials/decision-tree-classification-python
-        # train unconstrained model
-        classifier = get_classifier(model_str)
-        #np.random.seed(0)
-        model = classifier.fit(X_train,y_train, sample_weight_train)
-        y_predict = model.predict(X_test)
-
-        # Scores on test set
-        test_scores = model.predict_proba(X_test)[:, 1]
-        models_dict = {"Unmitigated": (y_predict, test_scores)}
-
-        # given predictions+outcomes, I'll need to do the same
-        #x = data[['score', 'race']].values
-        #y = data['repay_indices'].values
-        #scores = cross_val_score(model, x, y, cv=5, scoring='f1_weighted')
-
-        #save scores and types (TP,FP,TN,FN) in list
-        T_b, T_w = get_types(X_test, y_predict, y_test, gender_test)
-        all_types.extend([T_b,T_w])
-        scores_names.extend(['unmitB', 'unmitW'])
-        # evaluate model
-        constraint_str = 'Un-'
-        results_overall, results_black, results_white = evaluating_model(constraint_str,X_test,y_test, y_predict, (0,0),(0,0), sample_weight_test,gender_test)
-        # adding results to dict
-        run_key = f'{model_str} Unmitigated'
-        overall_results_dict = add_values_in_dict(overall_results_dict, run_key, results_overall)
-        black_results_dict = add_values_in_dict(black_results_dict, run_key, results_black)
-        white_results_dict = add_values_in_dict(white_results_dict, run_key, results_white)
-
-        # train all constrained model for this model type
-        for constraint_str in constraints.values():
-
-            print(constraint_str)
-            mitigator, results_overall, results_black, results_white, y_pred_mitigated = add_constraint(model, constraint_str, X_train, y_train, gender_train, gender_test, X_test, y_test, y_predict,(0,0),(0,0), sample_weight_test, dashboard_bool=False)
-
-            #save scores in list
-            T_b, T_w = get_types(X_test, y_pred_mitigated, y_test, gender_test)
-            all_types.extend([T_b,T_w])
-            scores_names.extend([f'{constraint_str.lower()}B', f'{constraint_str.lower()}W'])
-
-            run_key = f'{model_str} {constraint_str} Mitigated'
-            overall_results_dict = add_values_in_dict(overall_results_dict, run_key, results_overall)
-            black_results_dict = add_values_in_dict(black_results_dict, run_key, results_black)
-            white_results_dict = add_values_in_dict(white_results_dict, run_key, results_white)
-
-        # save evaluations
-        if save == True:
-            overall_fieldnames = ['Run', 'Acc', 'ConfMatrix','F1micro', 'F1weighted','F1binary', 'SelectionRate', 'TNR rate', 'TPR rate', 'FNER', 'FPER', 'DIB','DIW', 'DP Diff', 'EO Diff', 'TPR Diff', 'FPR Diff', 'ER Diff']
-            byrace_fieldnames = ['Run', 'Acc', 'ConfMatrix','F1micro', 'F1weighted','F1binary', 'SelectionRate', 'TNR rate', 'TPR rate', 'FNER', 'FPER', 'DI']
-            save_dict_in_csv(overall_results_dict, overall_fieldnames, results_path+model_str+'_overall_results.csv')
-            save_dict_in_csv(black_results_dict, byrace_fieldnames, results_path+model_str+'_black_results.csv')
-            save_dict_in_csv(white_results_dict, byrace_fieldnames, results_path+model_str+'_white_results.csv')
-
-            # Save overall score results
-            columns_data_types = zip_longest(*all_types)
-
-            with open(results_path+model_str+'_all_types.csv',mode='w') as f:
-                writer = csv.writer(f)
-                writer.writerow(scores_names)
-                writer.writerows(columns_data_types)
-                f.close()
+    return mitigator, results_overall, results_0, results_1, y_pred_mitigated
