@@ -13,7 +13,18 @@ from scripts.visualization_utils import visual_label_dist_german
 
 
 def classify_german(data_path,results_dir,weight_idx,testset_size,balance_bool, models,constraints,save):
-
+    """
+    Classification and evaluation function for the German credit set, able to train many models (different classifier or constraint) in one run.
+    Args:
+        data_path <str>: path to the dataset csv-file
+        results_dir <str>: directory to save the results
+        weight_idx <int>: weights for samples (1 in our runs)
+        testset_size <float>: prportion of testset samples in the dataset (e.g. 0.3)
+        balance_bool <bool>: False= default (testset like trainset), True= balanced testset
+        models <dict>: classifers used for training
+        constraints <dict>: fairness constraints used for training different models
+        save <bool>: indicator if the results shoud be saved
+    """
 
     warnings.filterwarnings('ignore', category=FutureWarning)
     warnings.filterwarnings('ignore', category=ConvergenceWarning, module='sklearn')
@@ -30,11 +41,11 @@ def classify_german(data_path,results_dir,weight_idx,testset_size,balance_bool, 
     # split into training and test set
     X_train, X_test, y_train, y_test = train_test_split(x, y, test_size = testset_size, random_state=42)
 
+    # balancing testset
     if balance_bool:
-        X_train, y_train = balance_test_set_ratios(X_train, y_train, 1000)
         #X_test, y_test = balance_test_set_ratios(X_test, y_test, 1000)
 
-    # collect our sensitive attribute
+    # collect our sensitive,protected attribute
     gender_train = X_train[:, -1]
     gender_test = X_test[:, -1]
     print(' train:', len(gender_train))
@@ -66,6 +77,7 @@ def classify_german(data_path,results_dir,weight_idx,testset_size,balance_bool, 
             X_test_w.append(X_test[index][0])
             y_test_w.append(y_test[index])
 
+    # for each classifier
     for model_str in models.values():
         print(model_str)
         results_path = results_dir
@@ -79,12 +91,13 @@ def classify_german(data_path,results_dir,weight_idx,testset_size,balance_bool, 
         all_types = []
         scores_names = []
 
+        # get the type retio from the true samples
         T_test_b = ['TP' if e==1 else "TN" for e in y_test_b]
         T_test_w = ['TP' if e==1 else "TN" for e in y_test_w]
 
         all_types.extend([T_test_b,T_test_w])
         scores_names.extend(['testB', 'testW'])
-        # Reference: https://www.datacamp.com/community/tutorials/decision-tree-classification-python
+
         # train unconstrained model
         classifier = get_classifier(model_str)
         #np.random.seed(0)
@@ -108,13 +121,14 @@ def classify_german(data_path,results_dir,weight_idx,testset_size,balance_bool, 
         black_results_dict = add_values_in_dict(black_results_dict, run_key, results_black)
         white_results_dict = add_values_in_dict(white_results_dict, run_key, results_white)
 
-        # train all constrained model for this model type
+        # train all constrained model for this classifier type
         for constraint_str in constraints.values():
 
+            # adding contrained, classify and evaluate it
             print(constraint_str)
-            mitigator, results_overall, results_black, results_white, y_pred_mitigated = add_constraint_and_evaluate(model, constraint_str, X_train, y_train, gender_train, gender_test, X_test, y_test, y_predict,(0,0),(0,0), sample_weight_test, dashboard_bool=False)
+            mitigator, results_overall, results_black, results_white, y_pred_mitigated = add_constraint_and_evaluate(model, constraint_str, X_train, y_train, gender_train, gender_test, X_test, y_test, y_predict, sample_weight_test)
 
-            #save scores in list
+            #save types in list
             T_b, T_w = get_types(X_test, y_pred_mitigated, y_test, gender_test)
             all_types.extend([T_b,T_w])
             scores_names.extend([f'{constraint_str.lower()}B', f'{constraint_str.lower()}W'])
@@ -132,7 +146,7 @@ def classify_german(data_path,results_dir,weight_idx,testset_size,balance_bool, 
             save_dict_in_csv(black_results_dict, byrace_fieldnames, results_path+model_str+'_0_results.csv')
             save_dict_in_csv(white_results_dict, byrace_fieldnames, results_path+model_str+'_1_results.csv')
 
-            # Save overall score results
+            # Save overall zype results
             columns_data_types = zip_longest(*all_types)
 
             with open(results_path+model_str+'_all_types.csv',mode='w') as f:

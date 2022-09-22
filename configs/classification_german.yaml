@@ -1,18 +1,18 @@
 
-data_path: 'data/german_credit.csv'
-results_dir: 'results/german/german_sex_validRun/'
-weight_idx: 1
-testset_size: 0.3
-balance_bool: 0
-models:
+data_path: 'data/german_credit.csv' # path to the dataset csv-file
+results_dir: 'results/german/german_sex_validRun/' # directory to save the results
+weight_idx: 1 # weight index for samples (1 in our runs)
+testset_size: 0.3 # proportion of testset samples in the dataset (e.g. 0.3)
+balance_bool: False # False = default (testset like trainset), True = balanced testset
+models: # classifers used for training
   Decision Tree: 'dt'
   Gaussian Naive Bayes: 'gnb'
   Logistic Regression: 'lgr'
   Gradient_Boosted_Trees: 'gbt'
-constraints:
+constraints: # fairness constraints used for training different models
   Demografic Parity: 'DP'
   Equalized Odds: 'EO'
   Equality of Opportunity: 'TPRP'
   False Positive Rate Parity: 'FPRP'
   Error Rate Parity: 'ERP'
-save: True
+save: True # indicator if the results shoud be saved

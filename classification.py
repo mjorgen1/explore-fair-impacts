@@ -11,24 +11,40 @@ from scripts.classification_utils import load_args,prep_data,get_classifier, get
 
 
 def classify(data_path,results_dir,weight_idx,testset_size, test_set_variant, test_set_bound, di_means, di_stds, models,constraints,save):
-    
+    """
+    Classification and evaluation function for the synthetic datasets (based on FICO-data), able to train many models (different classifier or constraint) in one run.
+    Args:
+        data_path <str>: path to the dataset csv-file
+        results_dir <str>: directory to save the results
+        weight_idx <int>: weight index for samples (1 in our runs)
+        testset_size <float>: prportion of testset samples in the dataset (e.g. 0.3)
+        test_set_variant <int>: 0= default (testset like trainset), 1= balanced testset, 2= original,true FICO distribution
+        test_set_bound <int>:  upper bound for absolute test_set size
+        di_means <list or tuple>: means for delayed impact distributions (rewardTP,penaltyFP)
+        di_stds <list or tuple>:  standart deviations for delayed impact distributions (rewardTP,penaltyFP)
+        models <dict>: classifers used for training
+        constraints <dict>: fairness constraints used for training different models
+        save <bool>: indicator if the results shoud be saved
+    """
 
     warnings.filterwarnings('ignore', category=FutureWarning)
-    # Load and Prepare data
+    # Load and extract data
     data = pd.read_csv(data_path)
     data[['score', 'race']] = data[['score', 'race']].astype(int)
     x = data[['score', 'race']].values
     y = data['repay_indices'].values
 
-
+    # preprocess data
     X_train, X_test, y_train, y_test, race_train, race_test, sample_weight_train, sample_weight_test = prep_data(data, testset_size,test_set_variant,test_set_bound, weight_idx)
 
+    # plotting set stats
     visual_scores_by_race(results_dir,'all',x)
     visual_scores_by_race(results_dir,'train',X_train)
     visual_scores_by_race(results_dir,'test',X_test)
     visual_label_dist(results_dir,'all',x,y)
     visual_label_dist(results_dir,'train',X_train, y_train)
     visual_label_dist(results_dir,'test',X_test,y_test)
+
     # split up X_test by race
     X_test_b = []
     X_test_w = []
@@ -95,7 +111,7 @@ def classify(data_path,results_dir,weight_idx,testset_size, test_set_variant, te
         for constraint_str in constraints.values():
 
             print(constraint_str)
-            mitigator, results_overall, results_black, results_white, y_pred_mitigated = add_constraint_and_evaluate(model, constraint_str, X_train, y_train, race_train, race_test, X_test, y_test, y_predict,di_means,di_stds, sample_weight_test, dashboard_bool=False)
+            mitigator, results_overall, results_black, results_white, y_pred_mitigated = add_constraint_and_evaluate(model, constraint_str, X_train, y_train, race_train, race_test, X_test, y_test, y_predict, sample_weight_test, False, di_means,di_stds,)
 
             #save scores in list
             X_b, X_w, T_b, T_w = get_new_scores(X_test, y_pred_mitigated, y_test, di_means, di_stds, race_test)
