@@ -476,7 +476,7 @@ def save_dict_in_csv(results_dict, fieldnames, name_csv):
         csv_file.close()
 
 
-def add_constraint_and_evaluate(model, constraint_str, X_train, y_train, race_train, race_test, X_test, y_test, y_predict,di_means,di_stds, sample_weight_test, dashboard_bool):
+def add_constraint_and_evaluate(model, constraint_str, X_train, y_train, race_train, race_test, X_test, y_test, y_predict, sample_weight_test, dashboard_bool=False, di_means=(0,0),di_stds=(0,0)):
     """
     Applying fairness constraint and reduction algorithm on the model.
         Args:
@@ -489,10 +489,10 @@ def add_constraint_and_evaluate(model, constraint_str, X_train, y_train, race_tr
             - X_test <numpy.ndarray>: samples for testing
             - y_test <numpy.ndarray>: predicted labels
             - y_predicted <numpy.ndarray>: uncontrained model prediction of labels from test set
-            - di_means <tuple>:means of the delayed impact distributions
-            - di_stds <tuple>: deviation of delyed impact distributions
             - sample_weight_test <numpy.ndarray>: weights for test samples
             - dashboard_bool <bool>: can be used to display FairnessDashboard
+            - di_means <tuple>:means of the delayed impact distributions (only necessary when distributions are used)
+            - di_stds <tuple>: deviation of delyed impact distributions (only necessary when distributions are used)
 
         Returns:
             - mitigator <object>: model trained with contraint
