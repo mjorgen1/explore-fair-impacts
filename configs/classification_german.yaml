@@ -1,9 +1,9 @@
 
 data_path: 'data/german_credit.csv' # path to the dataset csv-file
-results_dir: 'results/german/german_sex_validRun/' # directory to save the results
+results_dir: 'final_results/german_data/german_balTestSet/' # directory to save the results
 weight_idx: 1 # weight index for samples (1 in our runs)
 testset_size: 0.3 # proportion of testset samples in the dataset (e.g. 0.3)
-balance_bool: False # False = default (testset like trainset), True = balanced testset
+balance_bool: True # False = default (testset like trainset), True = balanced testset
 models: # classifers used for training
   Decision Tree: 'dt'
   Gaussian Naive Bayes: 'gnb'

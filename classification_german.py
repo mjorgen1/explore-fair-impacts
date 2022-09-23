@@ -5,6 +5,9 @@ from itertools import zip_longest
 import argparse
 import warnings
 import csv
+import pandas as pd
+import numpy as np
+import os
 from scripts.evaluation_utils import evaluating_model
 from scripts.classification_utils import load_args,train_test_split, balance_test_set_ratios, get_classifier, get_types, add_constraint_and_evaluate,add_values_in_dict, save_dict_in_csv
 from scripts.visualization_utils import visual_label_dist_german
@@ -43,7 +46,7 @@ def classify_german(data_path,results_dir,weight_idx,testset_size,balance_bool, 
 
     # balancing testset
     if balance_bool:
-        #X_test, y_test = balance_test_set_ratios(X_test, y_test, 1000)
+        X_test, y_test = balance_test_set_ratios(X_test, y_test, 1000)
 
     # collect our sensitive,protected attribute
     gender_train = X_train[:, -1]
