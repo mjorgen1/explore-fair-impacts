@@ -16,11 +16,11 @@ if __name__ == '__main__':
     # load german data
     df = pd.read_csv(data_path, sep=' ', names=colnames, header=None)
 
-    # transform sensitive attribute and label binary(0,1)
+    # transform sensitive attribute and label binary (0,1)
     df['Sex'] = df['Sex'].map({'A91':1,'A92':0,'A93':1,'A94':1,'A95':0})
     df['Risk'] = (df['Risk'] == 1).astype(int)
 
-    # transofrm all categorical cols to numerical ines
+    # transform all categorical cols to numerical ones
     categorical_cols = ["Checking account", "Credit History", "Purpose", "Savings account",
              "Present employment", "Other debtors", "Propety", "Other installment plans", "Hounsing", "Job", "Telephone","Foreign worker",]
     le = LabelEncoder()

@@ -22,4 +22,4 @@ constraints: # fairness constraints used for training different models
   Equality of Opportunity: 'TPRP'
   False Positive Rate Parity: 'FPRP'
   Error Rate Parity: 'ERP'
-save: True # indicator if the results shoud be saved
+save: True # indicator if the results should be saved

@@ -4,7 +4,7 @@ results_dir: 'final_results/german_data/german_balTestSet/' # directory to save 
 weight_idx: 1 # weight index for samples (1 in our runs)
 testset_size: 0.3 # proportion of testset samples in the dataset (e.g. 0.3)
 balance_bool: True # False = default (testset like trainset), True = balanced testset
-models: # classifers used for training
+models: # classifiers used for training
   Decision Tree: 'dt'
   Gaussian Naive Bayes: 'gnb'
   Logistic Regression: 'lgr'
@@ -15,4 +15,4 @@ constraints: # fairness constraints used for training different models
   Equality of Opportunity: 'TPRP'
   False Positive Rate Parity: 'FPRP'
   Error Rate Parity: 'ERP'
-save: True # indicator if the results shoud be saved
+save: True # indicator if the results should be saved

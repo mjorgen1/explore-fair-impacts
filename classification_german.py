@@ -22,11 +22,11 @@ def classify_german(data_path,results_dir,weight_idx,testset_size,balance_bool, 
         data_path <str>: path to the dataset csv-file
         results_dir <str>: directory to save the results
         weight_idx <int>: weights for samples (1 in our runs)
-        testset_size <float>: prportion of testset samples in the dataset (e.g. 0.3)
+        testset_size <float>: proportion of testset samples in the dataset (e.g. 0.3)
         balance_bool <bool>: False= default (testset like trainset), True= balanced testset
-        models <dict>: classifers used for training
+        models <dict>: classifiers used for training
         constraints <dict>: fairness constraints used for training different models
-        save <bool>: indicator if the results shoud be saved
+        save <bool>: indicator if the results should be saved
     """
 
     warnings.filterwarnings('ignore', category=FutureWarning)
@@ -48,7 +48,7 @@ def classify_german(data_path,results_dir,weight_idx,testset_size,balance_bool, 
     if balance_bool:
         X_test, y_test = balance_test_set_ratios(X_test, y_test, 1000)
 
-    # collect our sensitive,protected attribute
+    # collect our sensitive, protected attribute
     gender_train = X_train[:, -1]
     gender_test = X_test[:, -1]
     print(' train:', len(gender_train))
@@ -149,7 +149,7 @@ def classify_german(data_path,results_dir,weight_idx,testset_size,balance_bool, 
             save_dict_in_csv(black_results_dict, byrace_fieldnames, results_path+model_str+'_0_results.csv')
             save_dict_in_csv(white_results_dict, byrace_fieldnames, results_path+model_str+'_1_results.csv')
 
-            # Save overall zype results
+            # Save overall results
             columns_data_types = zip_longest(*all_types)
 
             with open(results_path+model_str+'_all_types.csv',mode='w') as f:
@@ -157,7 +157,6 @@ def classify_german(data_path,results_dir,weight_idx,testset_size,balance_bool, 
                 writer.writerow(scores_names)
                 writer.writerows(columns_data_types)
                 f.close()
-
 
 
 if __name__ == '__main__':

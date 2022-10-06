@@ -17,14 +17,14 @@ def classify(data_path,results_dir,weight_idx,testset_size, test_set_variant, te
         data_path <str>: path to the dataset csv-file
         results_dir <str>: directory to save the results
         weight_idx <int>: weight index for samples (1 in our runs)
-        testset_size <float>: prportion of testset samples in the dataset (e.g. 0.3)
+        testset_size <float>: proportion of testset samples in the dataset (e.g. 0.3)
         test_set_variant <int>: 0= default (testset like trainset), 1= balanced testset, 2= original,true FICO distribution
         test_set_bound <int>:  upper bound for absolute test_set size
         di_means <list or tuple>: means for delayed impact distributions (rewardTP,penaltyFP)
-        di_stds <list or tuple>:  standart deviations for delayed impact distributions (rewardTP,penaltyFP)
-        models <dict>: classifers used for training
+        di_stds <list or tuple>:  standard deviations for delayed impact distributions (rewardTP,penaltyFP)
+        models <dict>: classifiers used for training
         constraints <dict>: fairness constraints used for training different models
-        save <bool>: indicator if the results shoud be saved
+        save <bool>: indicator if the results should be saved
     """
 
     warnings.filterwarnings('ignore', category=FutureWarning)
@@ -146,11 +146,6 @@ def classify(data_path,results_dir,weight_idx,testset_size, test_set_variant, te
                 writer.writerow(scores_names)
                 writer.writerows(columns_data_types)
                 f.close()
-
-
-
-
-
 
 
 if __name__ == '__main__':
