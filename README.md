@@ -1,5 +1,5 @@
 # Supposedly Fair Classification Systems and Their Impacts
-Mackenzie Jorgensen, Elizabeth Black, Natalia Criado, & Jose Such
+Mackenzie Jorgensen, Hannah Richert, Elizabeth Black, Natalia Criado, & Jose Such
 
 The algorithmic fairness field has boomed with discrimination mitigation methods to make Machine Learning (ML) model
 predictions fairer across individuals and groups. However, recent research shows that these measures can sometimes lead
@@ -33,61 +33,60 @@ Our real-world dataset is the German Credit Dataset from the UCI ML Repo.
  - Folder:
     - Liu_paper_code: contains the forged code from https://github.com/lydiatliu/delayedimpact (indirectly used for data collection)
     - configs: contains yaml files, which entail configurations for data collection and classification from cmd line
-    - scripts: contais all functions used for data collection, classification, evaluation and visualisations (stored in seperate py files)
-    - notebooks: contais the notebooks to run the code ( data collection, classification, evaluation/statistics and visualizations)
+    - scripts: contains all functions used for data collection, classification, evaluation and visualisations (stored in seperate py files)
+    - notebooks: contains the notebooks to run the code ( data collection, classification, evaluation/statistics and visualizations)
 
 # Project Pipeline
 
 This project can be divided into three stages:
-1. Generation of (potentially synthetic) simulated dataset or rela world dataset
+1. Generation/collection of (potentially synthetic) a simulated dataset or real world dataset
 2. Training and testing ML models
 3. Visualizing and performing statistical analyses on results
 
 This section gives a high-level overview of the workflow of each section and what is needed to run the code.
-Stage 1 and 2 of the pipeline can be eiher run via notebook or via cmd line. The third part is only executable via notebooks.
+Stage 1 and 2 of the pipeline can be eiher run via notebook or via cmd line. The third part is only executable via jupyter notebooks.
 
 ## 1. Dataset Generation
 
-This section prepares the simulated,synthetic dataset (or the GermanCredit dataset) that will be used for training and testing the unmitigated and mitigated models. 
+This section prepares the simulated, synthetic dataset (or the German Credit dataset) that will be used for training and testing the unmitigated and mitigated models. 
   
-**Key details Synthetic datasets**:
+**Key details--Synthetic datasets**:
 - The original dataset according to Hardt et al. (2016) has the group_size_ratio: [0.12;0.88] and black_label_ratio: [0.66;0.34]. 
-  By changing those params we interfere tith the score distributions and create a synthetic dataset.
-- The ```delayedimpact/scripts/data_creation_utils.py``` is the pyfile that includes all of the helpful functions for the data collection
+  By changing those parameters, we interfere with the score distributions and create a synthetic dataset.
+- The ```delayedimpact/scripts/data_creation_utils.py``` is the pyfile that includes all of the helpful functions for the data collection.
 - How to run:
-  - Way 1: Run the notebook (```/notebooks/simData_collection```) and set params in the third cell
-  - Way 2: Set params in ```configs/data_creation``` or create your own .yaml file in the folder and run ```python create_synthetic_data.py -config data_creation``` from any cmd line (you can substitude the -config parameter with your own yaml-file name).
+  - Way 1: Run the notebook (```/notebooks/simData_collection```) and set parameters in the third cell.
+  - Way 2: Set parameters in ```configs/data_creation``` or create your own .yaml file in the folder and run ```python create_synthetic_data.py -config data_creation``` from any cmd line (you can substitute the -config parameter with your own yaml-file name).
 
-**Key details GermanCredit dataset**:
-- The original dataset according to UCI ML repo has the group_size_ratio: [0.12;0.88] and black_label_ratio: [0.66;0.34]. 
+**Key details--German Credit dataset**:
+- The original dataset according to UCI ML repo has the group_size_ratio: [0.31;0.69], a disadv-label-ratio: [0.35,0.65], and an adv_label_ratio: [0.28,0.72]. 
 - How to run:
-  - run ```python create_german_data.py from any cmd line (set correct parameters, like path at the beginning of the file).
+  - Run ```python create_german_data.py``` from any cmd line (set correct parameters, like the path at the beginning of the file).
 
 ## 2. Training and Testing ML Models
 
-This section trains ML models on the simulated data and trains unmitigated and mitigated models on it for comparison. 
+This section describes training ML models on the simulated data and training unmitigated and mitigated models on the data for comparison. 
 
-  
-**Key details Synthetic dataset**:
+**Key details--Synthetic dataset**:
 - The ```/scripts/classification_utils.py``` and ```/scripts/evaluation_utils.py``` are the pyfiles that include all of the helpful functions for the classification.
 - How to run:
   - Way 1: Run the notebook (```/notebooks/simData_classification```) and set params in the second cell
   - Way 2: Set params in ```configs/classification``` or create your own .yaml file in the folder and run ```python classification.py -config classification``` from any cmd line (you can substitude the -config parameter with your own yaml-file name).
   
-**Key details GermanCredit dataset**:
-- The ```/scripts/classification_utils.py``` and ```/scripts/evaluation_utils.py``` are the pyfiles that include all of the helpful functions for the classification.
+**Key details--German Credit dataset**:
+- The ```/scripts/classification_utils.py``` and ```/scripts/evaluation_utils.py``` are the pyfiles that include all of the helpful functions for classification.
 - How to run:
-  -  Set params in ```configs/classification_german``` or create your own .yaml file in the folder and run ```python classification_german.py -config classification_german``` from any cmd line (you can substitude the -config parameter with your own yaml-file name).
+  -  Set parameters in ```configs/classification_german``` or create your own .yaml file in the folder and run ```python classification_german.py -config classification_german``` from any cmd line (you can substitude the -config parameter with your own yaml-file name).
 
 
 ## 3. Performing statistical analyses on results
 
-This work is under construction.
+In this section, we investigate the immediate and delayed impact results, check the score distributions for Normality and then their significance based on different aspects of the experiments.
+- How to run (set parameters in the second cell): 
+ - Run the notebook (```/notebooks/simData_classification```)
 
 <!-- NOTES -->
 ## Notes/Resources:
-- For the reduction algorithm code see: [Grid Search](https://github.com/fairlearn/fairlearn/blob/main/fairlearn/reductions/_grid_search/grid_search.py) and [Exponentiated Gradient](https://github.com/fairlearn/fairlearn/blob/main/fairlearn/reductions/_exponentiated_gradient/exponentiated_gradient.py)
-- Reduction algorithms and fairness constraints: 'disparity constraints are cast as Lagrange multipliers, which cause the reweighting and relabelling of the input data. This *reduces* the problem back to standard machine learning training.'
 - Fairness constraint options: DP refers to demographic parity, EO to equalized odds, TPRP to true positive rate parity, FPRP to false positive rate parity, ERP to error rate parity, and BGL to bounded group loss.
 - The ML models available (these sklearn models' fit functions take in sample weights which is necessary for Fairlearn): gaussian naive bayes, decision tree, logistic regression, and svm. Currently, all samples equally (weight_index=1).
 - The sklearn confusion matrix looks like:
@@ -95,8 +94,6 @@ This work is under construction.
   [[TN FP]
    [FN TP]]
   ```
-- Impact score changes: TPs' scores increase by 75, FPs' scores drop by 150, and TNs and FNs do not change currently. Also, for aggregate analyses, we use the average score change of each (racial) group.
-- Race features: Black is 0 and White it 1.   
 
 <!-- CONTACT -->
 ## Contact
