@@ -1,4 +1,4 @@
-# Not so Fair: The Impact of Presumably Fair Machine Learning Models
+# Not So Fair: The Impact of Presumably Fair Machine Learning Models
 Mackenzie Jorgensen, Hannah Richert, Elizabeth Black, Natalia Criado, & Jose Such
 
 
