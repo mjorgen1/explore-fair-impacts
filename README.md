@@ -4,9 +4,6 @@ Mackenzie Jorgensen, Hannah Richert, Elizabeth Black, Natalia Criado, & Jose Suc
 
 When mitigation methods are applied to make fairer machine learning models in fairness-related classification settings, there is an assumption that the disadvantaged group should be better off than if no fairness mitigation method was applied. However, this is a potentially dangerous assumption because a ``fair'' model outcome does not automatically imply a positive impact for a disadvantaged individual---they could still be negatively impacted. Modeling and accounting for those impacts is key to ensure that mitigated models are not unintentionally harming individuals; we investigate if mitigated models can still negatively impact disadvantaged individuals and what conditions affect those impacts in a loan repayment example. Our results show that most mitigated models negatively impact disadvantaged group members in comparison to the unmitigated models. The domain-dependent impacts of model outcomes should help drive future mitigation method development. 
 
-We owe a great deal to Liu et al.'s work, [*Delayed Impact of Fair Machine Learning*](https://arxiv.org/abs/1803.04383). We extended their [code](https://github.com/lydiatliu/delayedimpact) here to solve a classification problem with 
-multiple ML models, fairness metrics, and mitigation methods. 
-
 # Links
 **Paper** (Link to come shortly): Not so Fair: The Impact of Presumably Fair Machine Learning Models in the Proceedings of the AAAI/ACM Conference on AI, Ethics, and Society 2023 
 
@@ -68,7 +65,7 @@ In this section, we investigate the immediate and delayed impact results, check 
 <!-- NOTES -->
 # Notes/Resources:
 - Fairness constraint options: DP refers to demographic parity, EO to equalized odds, TPRP to true positive rate parity, FPRP to false positive rate parity, ERP to error rate parity, and BGL to bounded group loss.
-- The ML models available (these sklearn models' fit functions take in sample weights which is necessary for Fairlearn): gaussian naive bayes, decision tree, logistic regression, and svm. Currently, all samples equally (weight_index=1).
+- The ML models available (these sklearn models' fit functions take in sample weights which is necessary for Fairlearn): gaussian naive bayes, decision tree, logistic regression, and svm. Currently, all samples are weighted equally (weight_index=1).
 - The sklearn confusion matrix looks like:
   ```
   [[TN FP]
@@ -81,11 +78,12 @@ In this section, we investigate the immediate and delayed impact results, check 
 * Hannah Richert - hrichert@ous.de
 
 # ACM Reference Format
-Tbd.
+Will update shortly.
 
 <!-- ACKNOWLEDGEMENTS -->
 # Acknowledgments
-Thank you to Lydia for helping me get started using her code!
+We owe a great deal to Liu et al.'s work, [*Delayed Impact of Fair Machine Learning*](https://arxiv.org/abs/1803.04383). We extended their [code](https://github.com/lydiatliu/delayedimpact) here and added to it to study a classification problem with 
+multiple ML models, fairness metrics, and mitigation methods. 
 
 <!-- License -->
 # License
