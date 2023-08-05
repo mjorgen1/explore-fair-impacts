@@ -5,7 +5,7 @@ Mackenzie Jorgensen, Hannah Richert, Elizabeth Black, Natalia Criado, & Jose Suc
 When mitigation methods are applied to make fairer machine learning models in fairness-related classification settings, there is an assumption that the disadvantaged group should be better off than if no fairness mitigation method was applied. However, this is a potentially dangerous assumption because a ``fair'' model outcome does not automatically imply a positive impact for a disadvantaged individual---they could still be negatively impacted. Modeling and accounting for those impacts is key to ensure that mitigated models are not unintentionally harming individuals; we investigate if mitigated models can still negatively impact disadvantaged individuals and what conditions affect those impacts in a loan repayment example. Our results show that most mitigated models negatively impact disadvantaged group members in comparison to the unmitigated models. The domain-dependent impacts of model outcomes should help drive future mitigation method development. 
 
 # Links
-**Paper** (Link to come shortly): Not so Fair: The Impact of Presumably Fair Machine Learning Models in the Proceedings of the AAAI/ACM Conference on AI, Ethics, and Society 2023 
+**Paper** [Not So Fair: The Impact of Presumably Fair Machine Learning Models](https://kclpure.kcl.ac.uk/portal/en/publications/not-so-fair-the-impact-of-presumably-fair-machine-learning-models) in the Proceedings of the AAAI/ACM Conference on AI, Ethics, and Society 2023 
 
 **Datasets**:
 Our simulated datasets are based on Hardt et al.'s 2016 dataset. 
@@ -78,7 +78,7 @@ In this section, we investigate the immediate and delayed impact results, check 
 * Hannah Richert - hrichert@ous.de
 
 # ACM Reference Format
-Will update shortly.
+Mackenzie Jorgensen, Hannah Richert, Elizabeth Black, Natalia Criado, and Jose Such. 2023. Not So Fair: The Impact of Presumably Fair Machine Learning Models. In AAAI/ACM Conference on AI, Ethics, and Society (AIES ’23), August 8–10, 2023, Montréal, QC, Canada. ACM, New York, NY, USA, 15 pages. https://doi.org/10.1145/3600211.3604699
 
 <!-- ACKNOWLEDGEMENTS -->
 # Acknowledgments
