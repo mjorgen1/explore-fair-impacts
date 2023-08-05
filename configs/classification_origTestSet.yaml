@@ -1,4 +1,3 @@
-
 data_path: 'data/synthetic_ds/Demo-i-Lab-b.csv' # path to the dataset csv-file
 results_dir: 'results/syn_orig/ib/' # directory to save the results
 weight_idx: 1 # weight index for samples (1 in our runs)

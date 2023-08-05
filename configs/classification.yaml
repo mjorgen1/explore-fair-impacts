@@ -1,23 +1,22 @@
-
-data_path: 'data/synthetic_ds/Demo-i-Lab-b.csv' # path to the dataset csv-file
-results_dir: 'results/syn_raw/ib/' # directory to save the results
+data_path: 'data/synthetic_datasets/Demo-i-Lab-b.csv' # path to the dataset csv-file
+results_dir: 'results/demo-i-lab-b/' # directory to save the results
 weight_idx: 1 # weight index for samples (1 in our runs)
 testset_size: 0.3 # proportion of testset samples in the dataset (e.g. 0.3)
 test_set_variant: 0 # 0= default (testset like trainset), 1= balanced testset, 2= original,true FICO distribution
 test_set_bound: 30000 # absolute upper bound for test_set size
-di_means: # means for delayed impact distributions (rewardTP,penaltyFP)
+di_means: # means for impact distributions (rewardTP,penaltyFP)
   - 75
   - -150
-di_stds: # standart deviations for delayed impact distributions (rewardTP,penaltyFP)
+di_stds: # standard deviations for impact distributions (rewardTP,penaltyFP)
   - 15
   - 15
-models: # classifers used for training
+models: # classifiers used for training
   Decision Tree: 'dt'
   Gaussian Naive Bayes: 'gnb'
   Logistic Regression: 'lgr'
   Gradient_Boosted_Trees: 'gbt'
 constraints: # fairness constraints used for training different models
-  Demografic Parity: 'DP'
+  Demographic Parity: 'DP'
   Equalized Odds: 'EO'
   Equality of Opportunity: 'TPRP'
   False Positive Rate Parity: 'FPRP'

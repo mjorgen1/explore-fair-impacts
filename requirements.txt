@@ -1,6 +1,6 @@
 numpy
 pandas
 matplotlib
-yaml
+pyyaml
 scikit-learn
 fairlearn

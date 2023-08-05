@@ -1,6 +1,6 @@
 # Arguments for create_data.py
 data_dir: 'data/raw/' # dir where raw files are stored (FICO data)
-result_path: 'data/synthetic_ds2/Demo-0-Lab-o.csv' # path inc. filename for saving the created dataset
+result_path: 'data/testing/Demo-0-Lab-0.csv' # path inc. filename for saving the created dataset
 set_size: 100000 # size of the final set (S)
 order_of_magnitude: 100000 # number of samples, sampled in one batch for original  set D (based on FICO data)
 group_size_ratio: # ratio of sensitive attributes in the created set
