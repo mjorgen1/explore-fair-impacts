@@ -37,19 +37,19 @@ Stage 1 and 2 of the pipeline can be eiher run via notebook or via cmd line. The
 
 This section prepares the simulated, synthetic dataset (or the German Credit dataset) that will be used for training and testing the unmitigated and mitigated models. 
   
-**Key details--Synthetic datasets**:
+**Key details**:
 - The original dataset according to Hardt et al. (2016) has the group_size_ratio: [0.12;0.88] and black_label_ratio: [0.66;0.34]. 
-  By changing those parameters, we interfere with the score distributions and create a synthetic dataset.
-- The ```delayedimpact/scripts/data_creation_utils.py``` is the pyfile that includes all of the helpful functions for the data collection.
+  By changing those parameters, we interfere with the demographic ratio and repayment labels for the disadvantaged group when creating synthetic datasets.
+- The ```delayedimpact/scripts/data_creation_utils.py``` is the pyfile that includes all of the helpful functions for the data collection for the baseline and synthetic datasets.
 - How to run:
   - Way 1: Run the notebook (```/notebooks/simData_collection```) and set parameters in the third cell.
   - Way 2: Set parameters in ```configs/data_creation``` or create your own .yaml file in the folder and run ```python create_synthetic_data.py -config data_creation``` from any cmd line (you can substitute the -config parameter with your own yaml-file name).
 
 ## 2. Training and Testing ML Models
 
-This section describes training ML models on the simulated data and training unmitigated and mitigated models on the data for comparison. 
+This section describes training ML models on the baseline and synthetic data and training unmitigated and mitigated models on the data for comparison. 
 
-**Key details--Synthetic dataset**:
+**Key details**:
 - The ```/scripts/classification_utils.py``` and ```/scripts/evaluation_utils.py``` are the pyfiles that include all of the helpful functions for the classification.
 - How to run:
   - Way 1: Run the notebook (```/notebooks/simData_classification```) and set params in the second cell
@@ -58,7 +58,7 @@ This section describes training ML models on the simulated data and training unm
 
 ## 3. Performing statistical analyses on results
 
-In this section, we investigate the immediate and delayed impact results, check the score distributions for Normality and then their significance based on different aspects of the experiments.
+In this section, we investigate the impact results, check the score distributions for Normality and then their significance based on different aspects of the experiments.
 - How to run (set parameters in the second cell): 
  - Run the notebook (```/notebooks/simData_classification```)
 
