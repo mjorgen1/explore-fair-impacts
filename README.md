@@ -16,17 +16,17 @@ Our simulated datasets are based on Hardt et al.'s 2016 dataset.
 # Repo Structure
  - Files:
     - requirements.txt contains the required python packages for the project
-    - create_synthetic_data.py, create_german_data.py, classification.py, classification_german.py -> run from cmd line
+    - generate_data.py, classification.py -> run from cmd line
  - Folder:
     - Liu_paper_code: contains the forged code from https://github.com/lydiatliu/delayedimpact (indirectly used for data collection)
     - configs: contains yaml files, which entail configurations for data collection and classification from cmd line
     - scripts: contains all functions used for data collection, classification, evaluation and visualisations (stored in seperate py files)
-    - notebooks: contains the notebooks to run the code ( data collection, classification, evaluation/statistics and visualizations)
+    - notebooks: contains the notebooks to run the code (data collection, classification, evaluation/statistics and visualizations)
 
 # Project Pipeline
 
 This project can be divided into three stages:
-1. Generation/collection of (potentially synthetic) a simulated dataset or real world dataset
+1. Generation/collection datasets
 2. Training and testing ML models
 3. Visualizing and performing statistical analyses on results
 
@@ -43,7 +43,7 @@ This section prepares the simulated, synthetic dataset (or the German Credit dat
 - The ```delayedimpact/scripts/data_creation_utils.py``` is the pyfile that includes all of the helpful functions for the data collection for the baseline and synthetic datasets.
 - How to run:
   - Way 1: Run the notebook (```/notebooks/simData_collection```) and set parameters in the third cell.
-  - Way 2: Set parameters in ```configs/data_creation``` or create your own .yaml file in the folder and run ```python create_synthetic_data.py -config data_creation``` from any cmd line (you can substitute the -config parameter with your own yaml-file name).
+  - Way 2: Set parameters in ```configs/data_creation``` or create your own .yaml file in the folder and run ```python generate_data.py -config data_creation``` from any cmd line (you can substitute the -config parameter with your own yaml-file name).
 
 ## 2. Training and Testing ML Models
 
@@ -52,15 +52,16 @@ This section describes training ML models on the baseline and synthetic data and
 **Key details**:
 - The ```/scripts/classification_utils.py``` and ```/scripts/evaluation_utils.py``` are the pyfiles that include all of the helpful functions for the classification.
 - How to run:
-  - Way 1: Run the notebook (```/notebooks/simData_classification```) and set params in the second cell
+  - Way 1: Run the notebook (```/notebooks/classification```) and set params in the second cell
   - Way 2: Set params in ```configs/classification``` or create your own .yaml file in the folder and run ```python classification.py -config classification``` from any cmd line (you can substitude the -config parameter with your own yaml-file name).
 
 
-## 3. Performing statistical analyses on results
+## 3. Performing Statistical Analyses on Results and Visualizing the Results
 
 In this section, we investigate the impact results, check the score distributions for Normality and then their significance based on different aspects of the experiments.
 - How to run (set parameters in the second cell): 
- - Run the notebook (```/notebooks/simData_classification```)
+ - For stat testing: Run the notebook (```/notebooks/data_eval_&_statistics```) and add in parameters in the second cell.
+ - For result visualizations: Run the notebook (```/notebooks/data_visualization```) and add in parameters in the second cell.
 
 <!-- NOTES -->
 # Notes/Resources:
