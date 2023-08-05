@@ -40,7 +40,7 @@ This section prepares the simulated, synthetic dataset (or the German Credit dat
 **Key details**:
 - The original dataset according to Hardt et al. (2016) has the group_size_ratio: [0.12;0.88] and black_label_ratio: [0.66;0.34]. 
   By changing those parameters, we interfere with the demographic ratio and repayment labels for the disadvantaged group when creating synthetic datasets.
-- The ```delayedimpact/scripts/data_creation_utils.py``` is the pyfile that includes all of the helpful functions for the data collection for the baseline and synthetic datasets.
+- The ```scripts/data_creation_utils.py``` is the pyfile that includes all of the helpful functions for the data collection for the baseline and synthetic datasets.
 - How to run:
   - Way 1: Run the notebook (```/notebooks/simData_collection```) and set parameters in the third cell.
   - Way 2: Set parameters in ```configs/data_creation``` or create your own .yaml file in the folder and run ```python generate_data.py -config data_creation``` from any cmd line (you can substitute the -config parameter with your own yaml-file name).
