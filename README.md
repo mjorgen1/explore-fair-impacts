@@ -11,7 +11,7 @@ When mitigation methods are applied to make fairer machine learning models in fa
 Our simulated datasets are based on Hardt et al.'s 2016 dataset. 
 - Download the data folder from the Github repository for [fairmlbook](https://github.com/fairmlbook/fairmlbook.github.io/tree/master/code/creditscore) (Barocas, Hardt and Narayanan 2018)
 - Save it to the root directory of this repository (csvs should be in the folder 'data/raw/')
-- Then run: ```delayedimpact/Liu_paper_code/FICO-figures.ipynb```
+- Then run: ```Liu_paper_code/FICO-figures.ipynb```
 
 # Repo Structure
  - Files:
@@ -59,9 +59,9 @@ This section describes training ML models on the baseline and synthetic data and
 ## 3. Performing Statistical Analyses on Results and Visualizing the Results
 
 In this section, we investigate the impact results, check the score distributions for Normality and then their significance based on different aspects of the experiments. Please note that to run the following two notebooks, you should have model results for all four classifiers; otherwise, you'll need to adjust the notebook code a bit.
-- How to run (set parameters in the second cell): 
- - For stat testing (under construction): Run the notebook (```/notebooks/data_eval_&_statistics```) and add in parameters in the second cell.
- - For result visualizations (under construction): Run the notebook (```/notebooks/data_visualization```) and add in parameters in the second cell.
+- How to run: 
+  - For stat testing (under construction): Run the notebook (```/notebooks/data_eval_&_statistics```) and add in parameters in the second cell.
+  - For result visualizations (under construction): Run the notebook (```/notebooks/data_visualization```) and add in parameters in the second cell.
 
 <!-- NOTES -->
 # Notes/Resources:
