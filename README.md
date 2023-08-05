@@ -11,7 +11,7 @@ When mitigation methods are applied to make fairer machine learning models in fa
 Our simulated datasets are based on Hardt et al.'s 2016 dataset. 
 - Download the data folder from the Github repository for [fairmlbook](https://github.com/fairmlbook/fairmlbook.github.io/tree/master/code/creditscore) (Barocas, Hardt and Narayanan 2018)
 - Save it to the root directory of this repository (csvs should be in the folder 'data/raw/')
-- Then run: ```delayedimpact/Liu_paper_code/FICO-figures.ipynb```
+- Then run: ```Liu_paper_code/FICO-figures.ipynb```
 
 # Repo Structure
  - Files:
