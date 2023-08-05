@@ -58,7 +58,7 @@ This section describes training ML models on the baseline and synthetic data and
 
 ## 3. Performing Statistical Analyses on Results and Visualizing the Results
 
-In this section, we investigate the impact results, check the score distributions for Normality and then their significance based on different aspects of the experiments.
+In this section, we investigate the impact results, check the score distributions for Normality and then their significance based on different aspects of the experiments. Please note that to run the following two notebooks, you should have model results for all four classifiers; otherwise, you'll need to adjust the notebook code a bit.
 - How to run (set parameters in the second cell): 
  - For stat testing: Run the notebook (```/notebooks/data_eval_&_statistics```) and add in parameters in the second cell.
  - For result visualizations: Run the notebook (```/notebooks/data_visualization```) and add in parameters in the second cell.
