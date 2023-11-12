@@ -151,19 +151,22 @@ def types_csvs(data_path= 'data/results/', folders= ['dt','gnb','lgr','gbt']):
         df = df.reset_index(drop=True)
         df = df.melt(var_name="ID",value_name="Category")
 
-        # save ratios
-        df_norm = df.groupby('ID').value_counts(normalize=True)
+        # save ratios 
+        df_norm = df.groupby('ID')['Category'].value_counts(normalize=True)
+        df_norm = df_norm.rename('Ratio')
+        df_norm = pd.DataFrame(df_norm)
         df_norm = df_norm.reset_index()
-        df_norm = df_norm.rename(columns= {0:'Ratio'})
+        
         df_norm = df_norm.pivot(index='Category', columns='ID')['Ratio']
         df_norm = df_norm.fillna(0)
         df_norm = df_norm.round(decimals = 3)
         df_norm.to_csv(f'{data_path}{f}/{f}_type_ratios.csv')
 
         # save absolute nombers
-        df = df.groupby('ID').value_counts()
+        df = df.groupby('ID')['Category'].value_counts()
+        df = df.rename('Number')
+        df = pd.DataFrame(df)
         df = df.reset_index()
-        df = df.rename(columns= {0:'Number'})
         df = df.pivot(index='Category', columns='ID')['Number']
         df = df.fillna(0)
         df.to_csv(f'{data_path}{f}/{f}_type_absolute.csv')
