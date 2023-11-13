@@ -31,7 +31,7 @@ This project can be divided into three stages:
 3. Visualizing and performing statistical analyses on results
 
 This section gives a high-level overview of the workflow of each section and what is needed to run the code.
-Stage 1 and 2 of the pipeline can be eiher run via notebook or via cmd line. The third part is only executable via jupyter notebooks.
+Stage 1 and 2 of the pipeline can be eiher run via notebook or via cmd line. The third stage is only executable via jupyter notebooks.
 
 ## 1. Dataset Generation
 
@@ -53,14 +53,14 @@ This section describes training ML models on the baseline and synthetic data and
 - The ```/scripts/classification_utils.py``` and ```/scripts/evaluation_utils.py``` are the pyfiles that include all of the helpful functions for the classification.
 - How to run:
   - Way 1: Run the notebook (```/notebooks/classification```) and set params in the second cell
-  - Way 2 (fixing an error asap): Set params in ```configs/classification``` or create your own .yaml file in the folder and run ```python classification.py -config classification``` from any cmd line (you can substitude the -config parameter with your own yaml-file name).
+  - Way 2: Set params in ```configs/classification``` or create your own .yaml file in the folder and run ```python classification.py -config classification``` from any cmd line (you can substitude the -config parameter with your own yaml-file name). Before running, make sure that you've created the folder you want your results stored in which is the input for the ```results_dir``` parameter in the config file.
 
 
 ## 3. Performing Statistical Analyses on Results and Visualizing the Results
 
 In this section, we investigate the impact results, check the score distributions for Normality and then their significance based on different aspects of the experiments. Please note that to run the following two notebooks, you should have model results for all four classifiers; otherwise, you'll need to adjust the notebook code a bit.
 - How to run: 
-  - For stat testing (fixing an error asap): Run the notebook (```/notebooks/data_eval_&_statistics```) and add in parameters in the second cell.
+  - For stat testing: Run the notebook (```/notebooks/data_eval_&_statistics```) and add in parameters in the second cell.
   - For result visualizations (fixing an error asap): Run the notebook (```/notebooks/data_visualization```) and add in parameters in the second cell.
 
 <!-- NOTES -->
