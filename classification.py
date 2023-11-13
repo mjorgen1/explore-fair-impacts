@@ -33,6 +33,9 @@ def classify(data_path,results_dir,weight_idx,testset_size, test_set_variant, te
     data[['score', 'race']] = data[['score', 'race']].astype(int)
     x = data[['score', 'race']].values
     y = data['repay_indices'].values
+    
+    #check_results_path
+    os.makedirs(f'{results_dir}', exist_ok=True)
 
     # preprocess data
     X_train, X_test, y_train, y_test, race_train, race_test, sample_weight_train, sample_weight_test = prep_data(data, testset_size,test_set_variant,test_set_bound, weight_idx)
