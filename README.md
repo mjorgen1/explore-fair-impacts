@@ -61,7 +61,7 @@ This section describes training ML models on the baseline and synthetic data and
 In this section, we investigate the impact results, check the score distributions for Nostepsrmality and then their significance based on different aspects of the experiments. Please note that to run the following two notebooks, you should have model results for all four classifiers; otherwise, you'll need to adjust the notebook code a bit.
 - How to run: 
   - For stat testing: Run the notebook (```/notebooks/data_eval_&_statistics```) and add in parameters in the second cell.
-  - For result visualizations: Run the notebook (```/notebooks/data_visualization```) and add in parameters in the second cell. Note: steps 3 and 4 will only run if you have all datasets and results from the paper.
+  - For result visualizations: Run the notebook (```/notebooks/data_visualization```) and add in parameters in the second cell. Note: steps 3 runs if you have the varying impact distributions results from the paper and step 4 if you have all datasets and results run from the paper.
 
 <!-- NOTES -->
 # Notes/Resources:
