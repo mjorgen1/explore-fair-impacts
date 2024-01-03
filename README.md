@@ -50,18 +50,18 @@ This section prepares the simulated, synthetic dataset (or the German Credit dat
 This section describes training ML models on the baseline and synthetic data and training unmitigated and mitigated models on the data for comparison. 
 
 **Key details**:
-- The ```/scripts/classification_utils.py``` and ```/scripts/evaluation_utils.py``` are the pyfiles that include all of the helpful functions for the classification.
+- The ```/scripts/classification_utils.py``` and ```/scripts/evaluation_utils.py``` are the pyfiles that include all the helpful functions for the classification. Note: the folder you want your results stored in is the input for the ```results_dir``` parameter in the config file and if the folder doesn't already exist, it will be created when you run the below. 
 - How to run:
   - Way 1: Run the notebook (```/notebooks/classification```) and set params in the second cell
-  - Way 2: Set params in ```configs/classification``` or create your own .yaml file in the folder and run ```python classification.py -config classification``` from any cmd line (you can substitude the -config parameter with your own yaml-file name). Before running, make sure that you've created the folder you want your results stored in which is the input for the ```results_dir``` parameter in the config file.
+  - Way 2: Set params in ```configs/classification``` or create your own .yaml file in the folder and run ```python classification.py -config classification``` from any cmd line (you can substitude the -config parameter with your own yaml-file name). 
 
 
 ## 3. Performing Statistical Analyses on Results and Visualizing the Results
 
-In this section, we investigate the impact results, check the score distributions for Normality and then their significance based on different aspects of the experiments. Please note that to run the following two notebooks, you should have model results for all four classifiers; otherwise, you'll need to adjust the notebook code a bit.
+In this section, we investigate the impact results, check the score distributions for Nostepsrmality and then their significance based on different aspects of the experiments. Please note that to run the following two notebooks, you should have model results for all four classifiers; otherwise, you'll need to adjust the notebook code a bit.
 - How to run: 
   - For stat testing: Run the notebook (```/notebooks/data_eval_&_statistics```) and add in parameters in the second cell.
-  - For result visualizations (fixing an error asap): Run the notebook (```/notebooks/data_visualization```) and add in parameters in the second cell.
+  - For result visualizations: Run the notebook (```/notebooks/data_visualization```) and add in parameters in the second cell. Note: steps 3 and 4 will only run if you have all datasets and results from the paper.
 
 <!-- NOTES -->
 # Notes/Resources:

@@ -105,42 +105,6 @@ def visual_label_dist(path,fname,x,y):
     plt.savefig(f'{path}{fname}_label_distr.png', dpi=300)
 
 
-def visual_label_dist_german(path,fname,x,y):
-    """
-    Histogram-plot of the labels by group (gender).
-        Args:
-            - path <str>: path for saving the plot
-            - fname <str>: file name for saving the plot
-            - x <numpy.ndarray>: list of all input samples and gender indicator
-            - y <numpy.ndarray>: list of all labels of the samples
-    """
-
-    fig, axs = plt.subplots(1, 2, sharey=True, tight_layout=True)
-
-    fig.suptitle(f'Histogram of Loan Risk Distribution for {fname} data')
-    plt.xlabel('Risk Label')
-    # devide samples into groups
-    female_label_dist = y[np.where(x[:, -1] == 0)[0]]
-    male_label_dist = y[np.where(x[:, -1] == 1)[0]]
-
-    n_bins = 2
-    # We can set the number of bins with the *bins* keyword argument.
-    #start, end = ax.get_xlim()
-    stepsize=1
-    axs[0].xaxis.set_ticks(np.arange(0, 2, stepsize))
-    axs[0].set_xticklabels(['Bad','Good'])
-    axs[0].hist(female_label_dist, bins=n_bins)
-    axs[0].set_title('Female')
-    axs[0].set_ylabel('No. of Individuals')
-    axs[0].set_xlabel('Risk Label')
-
-    axs[1].xaxis.set_ticks(np.arange(0, 2, stepsize))
-    axs[1].set_xticklabels(['Bad','Good'])
-    axs[1].hist(male_label_dist, bins=n_bins)
-    axs[1].set_title('Male')
-    plt.savefig(f'{path}{fname}_label_distr.png', dpi=300)
-
-
 def delayed_impact_bar_plot(data_path, group = 0, classifier= ['DT','GNB','LGR','GBT']):
     """
     Bar plots of the Delayed Impact for each model by classifier
