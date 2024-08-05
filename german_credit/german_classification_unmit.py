@@ -5,7 +5,7 @@ import sys
 sys.path.append('../')
 
 from sklearn.model_selection import train_test_split
-
+from scripts.evaluation_utils import evaluating_model_german
 from scripts.classification_utils import load_args,prep_data,get_classifier, get_new_scores, add_constraint_and_evaluate,add_values_in_dict, save_dict_in_csv
 
 
@@ -28,26 +28,34 @@ print(german_data.columns)
 
 # drop credit and then re-add it to the end of the dataframe
 x = german_data.drop(['credit'], axis=1)
-# target label is credit, 1 (Good) or 2 (Bad)
+
+# Y labels needed to be 0s and 1s
+# target label is credit, 1 (Good)-->0 or 2 (Bad)-->1
 y = german_data['credit']
+#print(y)
+y_changed_0s = y.replace(to_replace=1, value=0)
+#print(y_changed_0s)
+y = y_changed_0s.replace(to_replace=2, value=1)
+#print(y)
 
 
 """
 PARAMETER SETTING
 """
 
-results_dir = 'german_results/german_unmit/' # directory to save the results
+results_path = 'german_results/german_unmit/' # directory to save the results
 weight_idx = 1 # weight index for samples (1 in our runs)
 test_size = 0.3 # proportion of testset samples in the dataset (e.g. 0.3)
 save = True # indicator if the results should be saved
 models = {'Decision Tree': 'dt', 'Gaussian Naive Bayes':'gnb','Logistic Regression': 'lgr', 'Gradient Boosted Trees': 'gbt'}
-model_name = models['Logistic Regression']
+model_name = models['Gradient Boosted Trees']
 
-os.makedirs(f'{results_dir}{model_name}', exist_ok=True)
+os.makedirs(f'{results_path}{model_name}', exist_ok=True)
 
 X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=test_size, random_state=42)
-print(y_train)
-print(y_test)
+# NOTE: the labels are 1 or 2
+#print(y_train)
+#print(y_test)
 X_train = X_train.reset_index().drop(['index'], axis=1)
 X_test = X_test.reset_index().drop(['index'], axis=1)
 y_train = y_train.reset_index().drop(['index'], axis=1)
@@ -64,13 +72,37 @@ if weight_idx == 1:
 elif weight_idx == 0:
     print('Sample weights are NOT all equal.')
 
+
+# NOTE:
+# Adult (advantaged) is 1
+# Youth (disadvantaged) is 0
 train_age = X_train['age']
 test_age = X_test['age']
 
+# NOTE: these are all pandas series
 train_credit = X_train['credit_amount']
+train_month = X_train['month']
 test_credit = X_test['credit_amount']
+test_month = X_test['month']
 
-# TODO: figure out how to make checking account status relevant for impact evaluation
+# use x to check month data
+months = x['month']
+#print(months.max())     # 72
+#print(months.min())     # 4
+#print(months.mean())    # 20.903
+#print(months.median()) # 18 median
+
+# array to collect the values
+test_4month_credit_arr = []
+
+# calculate 4 months worth of credit for ppl
+for index, credit_amt in enumerate(test_credit):
+    print(credit_amt)
+    test_4month_credit_arr.append((credit_amt / test_month.loc[index]) * 4)
+
+test_4months_credit = pd.Series(data = test_4month_credit_arr)
+# NOTE: the below pandas series contains the numbers that we're adding / subtracting depending on the outcome
+print(test_4months_credit)
 
 
 """
@@ -101,11 +133,9 @@ overall_results_dict = {}
 young_results_dict = {}
 old_results_dict = {}
 # TODO: check if combined actually works??
-combined_results_dict = {}
+#combined_results_dict = {}
 
-# TODO: make function for evaluating german model!!!
-
-results_overall, results_black, results_white = evaluating_model_german(constraint_str,X_test,y_test, y_predict, sample_weight_test,test_age)
+results_overall, results_young, results_old = evaluating_model_german(constraint_str,X_test,y_test, y_predict, test_4months_credit, sample_weight_test,test_age)
 #  results_overall  =  [accuracy, cs_matrix, f1_micro, f1_weighted, f1_binary, round(sr*100, 2), tnr, tpr, fner, fper, round(dp_diff*100, 2), round(eod_diff*100, 2), round(eoo_dif*100, 2), round(fpr_dif*100, 2), round(er_dif*100, 2)]
 #  results_black    =  [accuracy_1, cs_m_1, f1_m_1, f1_w_1, f1_b_1, sr_1, tnr_1, tpr_1, fner_1, fper_1]
 #  results_white    =  [accuracy_0, cs_m_0, f1_m_0, f1_w_0, f1_b_0, sr_0, tnr_0, tpr_0, fner_0, fper_0]
@@ -113,20 +143,20 @@ results_overall, results_black, results_white = evaluating_model_german(constrai
 #
 # added in f1_weighted, results_overall[3] after accuracy
 #overall_accuracy, f1_weighted, sr, tnr, tpr, fner, fper, --,--, tnr_b, tpr_b, fner_b, b_fper, w_tnr, w_tpr, w_fner, w_fper
-combined_results = [results_overall[3], results_overall[0], results_overall[5], results_overall[6], results_overall[7], results_overall[8], results_overall[9], 'na', 'na', results_black[6], results_black[7], results_black[8], results_black[9], results_white[6], results_white[7], results_white[8], results_white[9]]
+#combined_results = [results_overall[3], results_overall[0], results_overall[5], results_overall[6], results_overall[7], results_overall[8], results_overall[9], 'na', 'na', results_black[6], results_black[7], results_black[8], results_black[9], results_white[6], results_white[7], results_white[8], results_white[9]]
 
 run_key = f'{model_name} Unmitigated'
 overall_results_dict = add_values_in_dict(overall_results_dict, run_key, results_overall)
-black_results_dict = add_values_in_dict(black_results_dict, run_key, results_black)
-white_results_dict = add_values_in_dict(white_results_dict, run_key, results_white)
-combined_results_dict = add_values_in_dict(combined_results_dict, run_key, combined_results)
+young_results_dict = add_values_in_dict(young_results_dict, run_key, results_young)
+old_results_dict = add_values_in_dict(old_results_dict, run_key, results_old)
+#combined_results_dict = add_values_in_dict(combined_results_dict, run_key, combined_results)
 
 if save == True:
     overall_fieldnames = ['Run', 'Acc', 'ConfMatrix','F1micro', 'F1weighted','F1binary', 'SelectionRate', 'TNR rate', 'TPR rate', 'FNER', 'FPER', 'DP Diff', 'EO Diff', 'TPR Diff', 'FPR Diff', 'ER Diff']
-    byrace_fieldnames = ['Run', 'Acc', 'ConfMatrix','F1micro', 'F1weighted','F1binary', 'SelectionRate', 'TNR rate', 'TPR rate', 'FNER', 'FPER']
-    combined_fieldnames = ['Run', 'F1_weighted','Acc', 'SelectionRate', 'TNR', 'TPR', 'FNER', 'FPER', 'Black Impact', 'White Impact', 'TNR_B', 'TPR_B', 'FNER_B', 'FPER_B', 'TNR_W', 'TPR_W', 'FNER_W', 'FPER_W']
+    byage_fieldnames = ['Run', 'Acc', 'ConfMatrix','F1micro', 'F1weighted','F1binary', 'SelectionRate', 'TNR rate', 'TPR rate', 'FNER', 'FPER']
+    #combined_fieldnames = ['Run', 'F1_weighted','Acc', 'SelectionRate', 'TNR', 'TPR', 'FNER', 'FPER', 'Black Impact', 'White Impact', 'TNR_B', 'TPR_B', 'FNER_B', 'FPER_B', 'TNR_W', 'TPR_W', 'FNER_W', 'FPER_W']
     save_dict_in_csv(overall_results_dict, overall_fieldnames,  results_path+model_name+'_overall_results.csv')
-    save_dict_in_csv(black_results_dict, byrace_fieldnames,  results_path+model_name+'_black_results.csv')
-    save_dict_in_csv(white_results_dict, byrace_fieldnames,  results_path+model_name+'_white_results.csv')
-    save_dict_in_csv(combined_results_dict, combined_fieldnames, results_path+model_name+'_combined_results.csv')
+    save_dict_in_csv(young_results_dict, byage_fieldnames,  results_path+model_name+'_black_results.csv')
+    save_dict_in_csv(old_results_dict, byage_fieldnames,  results_path+model_name+'_white_results.csv')
+    #save_dict_in_csv(combined_results_dict, combined_fieldnames, results_path+model_name+'_combined_results.csv')
 
