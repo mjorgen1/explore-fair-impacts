@@ -273,7 +273,7 @@ def get_classifier(model_name):
         classifier = GaussianNB()
     elif model_name == 'lgr':
         # Reference: https://towardsdatascience.com/logistic-regression-using-python-sklearn-numpy-mnist-handwriting-recognition-matplotlib-a6b31e2b166a
-        classifier = LogisticRegression()
+        classifier = LogisticRegression(max_iter=100000)
     elif model_name == 'gbt':
         # Reference: https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html
         # Note: max_depth default is 3 but tune this parameter for best performance
@@ -305,6 +305,92 @@ def get_constraint(constraint_str):
     else:
         raise ValueError('unvalid constraint_str')
     return constraint
+
+def get_new_scores_updated(X_test, y_predict, y_test, di_means, di_stds, race_test):
+    """
+    Calculate the new scores and retun the types (Tp,TP,FN,TN), after applying penalty (to FP) and reward (to TP) to positive samples
+    Args:
+        - X_test <numpy.ndarray>: samples for testing
+        - y_predict <numpy.ndarray>: predicted test set labels a model
+        - y_test <numpy.ndarray>: predicted labels
+        - di_means <tuple>: means of the delayed impact distributions
+        - di_stds <tuple>: deviation of delayed impact distributions
+        - race_test <numpy.ndarray>: sensitive attribute of test samples
+
+    Returns:
+        - black_scores <list>: updated credit scores
+        - white_scores <list>: updated credit score  of testset samples of the advantaged group
+        - black_types <list>: type classification (TP,TP;FN,TN) of testset samples of the disadvantaged group
+        - white_types <list>: type classification (TP,TP;FN,TN) of testset samples of the advantaged group
+    """
+    black_scores = []
+    black_types = []
+    white_scores = []
+    white_types = []
+    # credit score bounds
+    up_bound = 850
+    low_bound = 300
+    # reward and penalty distribution parameters
+    reward_mu, penalty_mu = di_means
+    reward_std, penalty_std = di_stds
+
+    for index, label in enumerate(y_predict):
+
+        # first check for TP or TP
+        if label == 1 and y_test[index] == 1:  # if it's a TP
+            if race_test[index] == 0:  # black
+                black_types.append('TP')
+                new_score = X_test[index][0] + int(np.random.normal(reward_mu, reward_std, 1))
+                if new_score <= up_bound:
+                    black_scores.append(new_score)
+                else:
+                    black_scores.append(up_bound)
+            elif race_test[index] == 1:  # white
+                white_types.append('TP')
+                new_score = X_test[index][0] + int(np.random.normal(reward_mu, reward_std, 1))
+                if new_score <= up_bound:
+                    white_scores.append(new_score)
+                else:
+                    white_scores.append(up_bound)
+        elif label == 1 and y_test[index] == 0:  # if it's a FP
+            if race_test[index] == 0:  # black
+                black_types.append('FP')
+                new_score = X_test[index][0] + int(np.random.normal(penalty_mu, penalty_std, 1))
+                if new_score < low_bound:
+                    black_scores.append(low_bound)
+                else:
+                    black_scores.append(new_score)
+            elif race_test[index] == 1:  # white
+                white_types.append('FP')
+                new_score = X_test[index][0] + int(np.random.normal(penalty_mu, penalty_std, 1))
+                if new_score < low_bound:
+                    white_scores.append(low_bound)
+                else:
+                    white_scores.append(new_score)
+        elif label == 0 and y_test[index] == 0:  # TN, no change to credit score
+            if race_test[index] == 0:  # black
+                black_types.append('TN')
+                black_scores.append(X_test[index][0])
+            elif race_test[index] == 1:  # white
+                white_types.append('TN')
+                white_scores.append(X_test[index][0])
+        elif label == 0 and y_test[index] == 1:  # FN drop in credit score
+            if race_test[index] == 0:  # black
+                black_types.append('FN')
+                new_score = X_test[index][0] - int(np.random.normal(reward_mu, reward_std, 1))
+                if new_score < low_bound:
+                    black_scores.append(low_bound)
+                else:
+                    black_scores.append(new_score)
+            elif race_test[index] == 1:  # white
+                white_types.append('FN')
+                new_score = X_test[index][0] - int(np.random.normal(reward_mu, reward_std, 1))
+                if new_score < low_bound:
+                    white_scores.append(low_bound)
+                else:
+                    white_scores.append(new_score)
+
+    return black_scores, white_scores, black_types, white_types
 
 
 def get_new_scores(X_test, y_predict, y_test, di_means, di_stds, race_test):
