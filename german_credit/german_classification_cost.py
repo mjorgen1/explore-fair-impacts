@@ -45,7 +45,7 @@ y = y_changed_0s.replace(to_replace=2, value=1)
 PARAMETER SETTING
 """
 
-fp_weight = 10
+fp_weight = 5
 fn_weight = 1
 balanced = False
 
@@ -162,7 +162,7 @@ results_overall, results_young, results_old = evaluating_model_german(constraint
 results_path_full = results_path+model_name+'/'
 #print(results_path_full)
 
-run_key = f'{model_name} Cost-mitigated'
+run_key = f'{model_name}cost-fp{fp_weight}-fn{fn_weight}'
 overall_results_dict = add_values_in_dict(overall_results_dict, run_key, results_overall)
 young_results_dict = add_values_in_dict(young_results_dict, run_key, results_young)
 old_results_dict = add_values_in_dict(old_results_dict, run_key, results_old)

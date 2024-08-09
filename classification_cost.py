@@ -128,7 +128,7 @@ X_unmit_b, X_unmit_w,T_unmit_b, T_unmit_w = get_new_scores_updated(X_test, y_pre
 constraint_str = 'Cost-'
 results_overall, results_black, results_white = evaluating_model_updated(constraint_str,X_test,y_test, y_predict, di_means,di_stds, sample_weight_test,race_test)
 
-run_key = f'{model_name} Cost-mitigated'
+run_key = f'{model_name}cost-fp{fp_weight}-fn{fn_weight}'
 overall_results_dict = add_values_in_dict(overall_results_dict, run_key, results_overall)
 black_results_dict = add_values_in_dict(black_results_dict, run_key, results_black)
 white_results_dict = add_values_in_dict(white_results_dict, run_key, results_white)
