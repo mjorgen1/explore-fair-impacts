@@ -6,6 +6,8 @@ sys.path.append('../')
 
 from sklearn.model_selection import train_test_split
 from scripts.evaluation_utils import evaluating_model_german
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import GradientBoostingClassifier
 from scripts.classification_utils import load_args,prep_data,get_classifier, get_new_scores, add_constraint_and_evaluate,add_values_in_dict, save_dict_in_csv
 
 
@@ -43,12 +45,16 @@ y = y_changed_0s.replace(to_replace=2, value=1)
 PARAMETER SETTING
 """
 
-results_path = 'german_results/german_unmit/' # directory to save the results
+fp_weight = 10
+fn_weight = 1
+balanced = False
+
+results_path = 'german_results/german_cost/' # directory to save the results
 weight_idx = 1 # weight index for samples (1 in our runs)
 test_size = 0.3 # proportion of testset samples in the dataset (e.g. 0.3)
 save = True # indicator if the results should be saved
 models = {'Decision Tree': 'dt', 'Gaussian Naive Bayes':'gnb','Logistic Regression': 'lgr', 'Gradient Boosted Trees': 'gbt'}
-model_name = models['Gradient Boosted Trees']
+model_name = models['Logistic Regression']
 
 os.makedirs(f'{results_path}{model_name}', exist_ok=True)
 
@@ -109,8 +115,16 @@ print(test_4months_credit)
 MODEL TRAINING
 """
 
+if not balanced:
+    classifier = LogisticRegression(class_weight={0:fp_weight, 1:fn_weight})  # so I can add in weights
+else:
+    classifier = LogisticRegression(class_weight='balanced')
+# Resource: https://fraud-detection-handbook.github.io/fraud-detection-handbook/Chapter_6_ImbalancedLearning/CostSensitive.html
+# {0:c10 (FP), 1:c01 (FN)}: The misclassification costs are explicitly set for the two classes by means of a dictionary.
+# Conf matrix: [c00,     c01(FN)]
+#              [c10(FP), c11]
+
 print('The classifier trained below is: ', model_name)
-classifier = get_classifier(model_name)
 
 # Reference: https://www.datacamp.com/community/tutorials/decision-tree-classification-python
 np.random.seed(0)
@@ -128,7 +142,7 @@ test_scores = model.predict_proba(X_test)[:, 1]
 SAVING RESULTS
 """
 
-constraint_str = 'Un-'
+constraint_str = 'Cost-'
 overall_results_dict = {}
 young_results_dict = {}
 old_results_dict = {}
@@ -148,7 +162,7 @@ results_overall, results_young, results_old = evaluating_model_german(constraint
 results_path_full = results_path+model_name+'/'
 #print(results_path_full)
 
-run_key = f'{model_name} Unmitigated'
+run_key = f'{model_name} Cost-mitigated'
 overall_results_dict = add_values_in_dict(overall_results_dict, run_key, results_overall)
 young_results_dict = add_values_in_dict(young_results_dict, run_key, results_young)
 old_results_dict = add_values_in_dict(old_results_dict, run_key, results_old)
