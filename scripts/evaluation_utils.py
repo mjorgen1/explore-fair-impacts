@@ -281,26 +281,22 @@ def evaluating_model_updated(constraint_str, X_test, y_test, y_pred, di_means, d
     # print('\n')
     return results_overall, results_0, results_1
 
-
-def calculate_impact_german(y_test, y_pred, credit_amount_4months, sensitive_attr_test):
+# in my first experiments with german data, I used this function where we considered impact changes for TP, FP, AND FN
+# after some thinking, I don't think we need to consider the FN impact in this case...unlike the loan repayment case
+def calculate_impact_german_with_fn(y_test, y_pred, credit_amount_4months, sensitive_attr_test):
     """
-        Calculate the Impact (DI) (average credit gained/lost of each group) (considering TP, FP, FN)
-            Args:
-                - X_test <numpy.ndarray>: samples (scores) of the test set
-                - y_true <numpy.ndarray>: true labels of the test set
-                - y_pred <numpy.ndarray>: predicted labels for the test set
-                - credit_amount_4months <pd.series>: four months worth of credit
-                - sensitive_attr_test <numpy.ndarray>: indicator of the group/race (Black is 0 and White it 1)
-            Returns:
-                - di_black <float>: DI for group Black
-                - di_white <float>: DI for group White
-        """
+    Calculate the Impact (DI) (average loan amt gained/lost of each group) (considering TP, FP, FN)
+        Args:
+            - X_test <numpy.ndarray>: samples (scores) of the test set
+            - y_true <numpy.ndarray>: true labels of the test set
+            - y_pred <numpy.ndarray>: predicted labels for the test set
+            - credit_amount_4months <pd.series>: four months worth of credit
+            - sensitive_attr_test <numpy.ndarray>: indicator of the group (Youth is 0 and Old is 1)
+        Returns:
+            - i_youth <float>: impact for group youth
+            - i_old <float>: impact for group old
+    """
 
-    # split mean and std for score change distributions (reward fot TP, penalty for FP)
-    #reward_mu, penalty_mu = di_means
-    #reward_std, penalty_std = di_stds
-
-    di_youth, di_old = 0, 0
     score_youth, score_old = [], []
 
     for index, true_label in enumerate(y_test):
@@ -325,6 +321,50 @@ def calculate_impact_german(y_test, y_pred, credit_amount_4months, sensitive_att
             elif sensitive_attr_test[index] == 1:  # white borrower
                 score_old.append(-score)
         else:  # the rest are TNs
+            if sensitive_attr_test[index] == 0:  # youth indiv
+                score_youth.append(0)
+            elif sensitive_attr_test[index] == 1:  # old indiv
+                score_old.append(0)
+
+    # calculate mean score difference or delayed impact of each group
+    i_youth = sum(score_youth) / len(score_youth)
+    i_old = sum(score_old) / len(score_old)
+
+    return i_youth, i_old
+
+# Only focusing on TP and FP impacts based on the loan amt they'd get within a certain time frame
+def calculate_impact_german(y_test, y_pred, credit_amount_4months, sensitive_attr_test):
+    """
+    Calculate the Impact (I) (average loan amt gained/lost of each group) (considering TP and FP)
+        Args:
+            - X_test <numpy.ndarray>: samples (scores) of the test set
+            - y_true <numpy.ndarray>: true labels of the test set
+            - y_pred <numpy.ndarray>: predicted labels for the test set
+            - credit_amount_4months <pd.series>: four months worth of credit
+            - sensitive_attr_test <numpy.ndarray>: indicator of the group (Youth is 0 and Old is 1)
+        Returns:
+            - i_youth <float>: impact for group youth
+            - i_old <float>: impact for group old
+    """
+
+    score_youth, score_old = [], []
+
+    for index, true_label in enumerate(y_test):
+        # the credit requested by a given applicant for a 4 month period
+        score = credit_amount_4months[index]
+        # check for TPs
+        if true_label == y_pred[index] and true_label == 1:
+            if sensitive_attr_test[index] == 0:  # young borrower
+                    score_youth.append(score)
+            elif sensitive_attr_test[index] == 1:  # old borrower
+                    score_old.append(score)
+        # check for FPs
+        elif true_label == 0 and y_pred[index] == 1:
+            if sensitive_attr_test[index] == 0:  # young borrower
+                score_youth.append(-score*2)
+            elif sensitive_attr_test[index] == 1:  # old borrower
+                score_old.append(-score*2)
+        else:  # the rest are TNs or FNs
             if sensitive_attr_test[index] == 0:  # youth indiv
                 score_youth.append(0)
             elif sensitive_attr_test[index] == 1:  # old indiv

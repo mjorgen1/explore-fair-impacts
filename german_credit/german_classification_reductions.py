@@ -47,14 +47,18 @@ PARAMETER SETTING
 constraint_str = 'ERP'
 constraint = get_constraint(constraint_str)
 
-results_path = 'german_results/german-mit/' # directory to save the results
+results_path = 'german_results/german_mit_TESTING/' # directory to save the results
 weight_idx = 1 # weight index for samples (1 in our runs)
 test_size = 0.3 # proportion of testset samples in the dataset (e.g. 0.3)
 save = True # indicator if the results should be saved
 models = {'Decision Tree': 'dt', 'Gaussian Naive Bayes':'gnb','Logistic Regression': 'lgr', 'Gradient Boosted Trees': 'gbt'}
 model_name = models['Gradient Boosted Trees']
+run_key = f'{model_name+constraint_str}-mitigated'
+results_path_full = results_path+model_name+constraint_str+'/'
 
-os.makedirs(f'{results_path}{model_name}{constraint_str}', exist_ok=True)
+os.makedirs(results_path_full, exist_ok=True)
+# old bit:
+#os.makedirs(f'{results_path}{model_name}{constraint_str}', exist_ok=True)
 
 X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=test_size, random_state=42)
 # NOTE: the labels are 1 or 2
@@ -145,34 +149,28 @@ SAVING RESULTS
 overall_results_dict = {}
 young_results_dict = {}
 old_results_dict = {}
-# TODO: check if combined actually works??
-#combined_results_dict = {}
+combined_results_dict = {}
 
-results_overall, results_young, results_old = evaluating_model_german(constraint_str, X_test, y_test, y_pred_mitigated, test_4months_credit, sample_weight_test,test_age)
-#  results_overall  =  [accuracy, cs_matrix, f1_micro, f1_weighted, f1_binary, round(sr*100, 2), tnr, tpr, fner, fper, round(dp_diff*100, 2), round(eod_diff*100, 2), round(eoo_dif*100, 2), round(fpr_dif*100, 2), round(er_dif*100, 2)]
-#  results_black    =  [accuracy_1, cs_m_1, f1_m_1, f1_w_1, f1_b_1, sr_1, tnr_1, tpr_1, fner_1, fper_1]
-#  results_white    =  [accuracy_0, cs_m_0, f1_m_0, f1_w_0, f1_b_0, sr_0, tnr_0, tpr_0, fner_0, fper_0]
+results_overall, results_young, results_old = evaluating_model_german(constraint_str,X_test,y_test, y_predict, test_4months_credit, sample_weight_test,test_age)
+#  results_overall  =  [accuracy, cs_matrix, f1_micro, f1_weighted, f1_binary, round(sr*100, 2), tnr, tpr, fner, fper, i_youth, i_old, round(dp_diff*100, 2), round(eod_diff*100, 2), round(eoo_dif*100, 2), round(fpr_dif*100, 2), round(er_dif*100, 2)]
+#  results_young    =  [accuracy_1, cs_m_1, f1_m_1, f1_w_1, f1_b_1, sr_1, tnr_1, tpr_1, fner_1, fper_1, impact]
+#  results_old    =  [accuracy_0, cs_m_0, f1_m_0, f1_w_0, f1_b_0, sr_0, tnr_0, tpr_0, fner_0, fper_0, impact]
 #
 #
 # added in f1_weighted, results_overall[3] after accuracy
-#overall_accuracy, f1_weighted, sr, tnr, tpr, fner, fper, --,--, tnr_b, tpr_b, fner_b, b_fper, w_tnr, w_tpr, w_fner, w_fper
-#combined_results = [results_overall[3], results_overall[0], results_overall[5], results_overall[6], results_overall[7], results_overall[8], results_overall[9], 'na', 'na', results_black[6], results_black[7], results_black[8], results_black[9], results_white[6], results_white[7], results_white[8], results_white[9]]
+#overall_accuracy, f1_weighted, sr, tnr, tpr, fner, fper, i_young, i_old, tnr_b, tpr_b, fner_b, b_fper, w_tnr, w_tpr, w_fner, w_fper
+combined_results = [results_overall[3], results_overall[0], results_overall[5], results_overall[6], results_overall[7], results_overall[8], results_overall[9], results_overall[10], results_overall[11], results_young[6], results_young[7], results_young[8], results_young[9], results_old[6], results_old[7], results_old[8], results_old[9]]
 
-results_path_full = results_path+model_name+constraint_str+'/'
-#print(results_path_full)
-
-run_key = f'{model_name+constraint_str}-mitigated'
 overall_results_dict = add_values_in_dict(overall_results_dict, run_key, results_overall)
 young_results_dict = add_values_in_dict(young_results_dict, run_key, results_young)
 old_results_dict = add_values_in_dict(old_results_dict, run_key, results_old)
-#combined_results_dict = add_values_in_dict(combined_results_dict, run_key, combined_results)
+combined_results_dict = add_values_in_dict(combined_results_dict, run_key, combined_results)
 
 if save == True:
     overall_fieldnames = ['Run', 'Acc', 'ConfMatrix','F1micro', 'F1weighted','F1binary', 'SelectionRate', 'TNR rate', 'TPR rate', 'FNER', 'FPER', 'ImpactYouth','ImpactOld','DP Diff', 'EO Diff', 'TPR Diff', 'FPR Diff', 'ER Diff']
     byage_fieldnames = ['Run', 'Acc', 'ConfMatrix','F1micro', 'F1weighted','F1binary', 'SelectionRate', 'TNR rate', 'TPR rate', 'FNER', 'FPER', 'Impact']
-    #combined_fieldnames = ['Run', 'F1_weighted','Acc', 'SelectionRate', 'TNR', 'TPR', 'FNER', 'FPER', 'Black Impact', 'White Impact', 'TNR_B', 'TPR_B', 'FNER_B', 'FPER_B', 'TNR_W', 'TPR_W', 'FNER_W', 'FPER_W']
+    combined_fieldnames = ['Run', 'F1_weighted','Acc', 'SelectionRate', 'TNR', 'TPR', 'FNER', 'FPER', 'Youth Impact', 'Old Impact', 'TNR_Y', 'TPR_Y', 'FNER_Y', 'FPER_Y', 'TNR_O', 'TPR_O', 'FNER_O', 'FPER_O']
     save_dict_in_csv(overall_results_dict, overall_fieldnames,  results_path_full+model_name+'_overall_results.csv')
     save_dict_in_csv(young_results_dict, byage_fieldnames,  results_path_full+model_name+'_young_results.csv')
     save_dict_in_csv(old_results_dict, byage_fieldnames,  results_path_full+model_name+'_old_results.csv')
-    #save_dict_in_csv(combined_results_dict, combined_fieldnames, results_path+model_name+'_combined_results.csv')
-
+    save_dict_in_csv(combined_results_dict, combined_fieldnames, results_path_full+model_name+'_combined_results.csv')
