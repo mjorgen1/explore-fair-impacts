@@ -1,3 +1,5 @@
+from statistics import median
+
 import numpy as np
 import pandas as pd
 import sys
@@ -332,8 +334,8 @@ def calculate_impact_german_with_fn(y_test, y_pred, credit_amount_4months, sensi
 
     return i_youth, i_old
 
-# Only focusing on TP and FP impacts based on the loan amt they'd get within a certain time frame
-def calculate_impact_german(y_test, y_pred, credit_amount_4months, sensitive_attr_test):
+# Only focusing on TP and FP impacts based on the loan amt they'd get
+def calculate_impact_german(y_test, y_pred, loan_val, sensitive_attr_test):
     """
     Calculate the Impact (I) (average loan amt gained/lost of each group) (considering TP and FP)
         Args:
@@ -351,7 +353,7 @@ def calculate_impact_german(y_test, y_pred, credit_amount_4months, sensitive_att
 
     for index, true_label in enumerate(y_test):
         # the credit requested by a given applicant for a 4 month period
-        score = credit_amount_4months[index]
+        score = loan_val[index]
         # check for TPs
         if true_label == y_pred[index] and true_label == 1:
             if sensitive_attr_test[index] == 0:  # young borrower
@@ -361,18 +363,33 @@ def calculate_impact_german(y_test, y_pred, credit_amount_4months, sensitive_att
         # check for FPs
         elif true_label == 0 and y_pred[index] == 1:
             if sensitive_attr_test[index] == 0:  # young borrower
-                score_youth.append(-score*2)
+                score_youth.append(-score*1.5)
             elif sensitive_attr_test[index] == 1:  # old borrower
-                score_old.append(-score*2)
+                score_old.append(-score*1.5)
         else:  # the rest are TNs or FNs
             if sensitive_attr_test[index] == 0:  # youth indiv
                 score_youth.append(0)
             elif sensitive_attr_test[index] == 1:  # old indiv
                 score_old.append(0)
 
-    # calculate mean score difference or delayed impact of each group
-    i_youth = sum(score_youth) / len(score_youth)
-    i_old = sum(score_old) / len(score_old)
+    # TODO: I might need to remove the 0s to make the median work?? I guess this depends on the confusion matrix...
+    # calculate median values of each group after taking out the 0s
+    #print('score_youth', score_youth)
+    print('# of youths: ', len(score_youth))
+    score_youth_nozeros = [i for i in score_youth if i != 0]
+    print('# of youths WITHOUT 0: ', len(score_youth_nozeros))
+    print('median of score_youth updated', median(score_youth_nozeros))
+    print('score_youth updated: ', score_youth_nozeros)
+
+    print('# of olds: ', len(score_old))
+    score_old_nozeros = [i for i in score_old if i != 0]
+    print('# of olds WITHOUT 0: ', len(score_old_nozeros))
+    print('median of score_old updated: ', median(score_old_nozeros))
+    print('score_old updated: ', score_old_nozeros)
+
+    #print('score_old', score_old)
+    i_youth = median(score_youth_nozeros)
+    i_old = median(score_old_nozeros)
 
     return i_youth, i_old
 
