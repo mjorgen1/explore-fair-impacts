@@ -2,19 +2,24 @@ import pandas as pd
 import os
 import numpy as np
 import sys
+import warnings
 sys.path.append('../')
 
 from sklearn.model_selection import train_test_split
 from scripts.evaluation_utils import evaluating_model_german
 from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.naive_bayes import GaussianNB
 from scripts.classification_utils import load_args,prep_data,get_classifier, get_new_scores, add_constraint_and_evaluate,add_values_in_dict, save_dict_in_csv
 
 
 
+warnings.filterwarnings('ignore', category=FutureWarning)
 
 """
 DATA PREPARATION
 """
+
 german_data = pd.read_csv(filepath_or_buffer='german_data.csv')
 
 #print(german_data)
@@ -44,17 +49,17 @@ y = y_changed_0s.replace(to_replace=2, value=1)
 PARAMETER SETTING
 """
 
-fp_weight = 3
-fn_weight = 4
+fp_weight = 10
+fn_weight = 5
 balanced = False
 # this is what the lgr for the unmitigated lgr is
 max_iterations = 100000
 
-results_path = 'german_results/german_cost/' # directory to save the results
+results_path = 'german_results/testing_cost/' # directory to save the results
 weight_idx = 1 # weight index for samples (1 in our runs)
 test_size = 0.3 # proportion of testset samples in the dataset (e.g. 0.3)
 save = True # indicator if the results should be saved
-models = {'Decision Tree': 'dt', 'Gaussian Naive Bayes':'gnb','Logistic Regression': 'lgr', 'Gradient Boosted Trees': 'gbt'}
+models = {'Decision Tree': 'dt', 'Logistic Regression': 'lgr'}
 model_name = models['Logistic Regression']
 
 if balanced:
@@ -118,10 +123,18 @@ test_credit = X_test['credit_amount']
 MODEL TRAINING
 """
 
-if not balanced:
-    classifier = LogisticRegression(class_weight={0:fp_weight, 1:fn_weight}, max_iter=max_iterations)  # so I can add in weights
+if model_name == 'lgr':
+    if not balanced:
+        classifier = LogisticRegression(class_weight={0:fp_weight, 1:fn_weight}, max_iter=max_iterations, random_state=0)  # so I can add in weights
+    else:
+        classifier = LogisticRegression(class_weight='balanced', max_iter=max_iterations, random_state=0)
+elif model_name == 'dt':
+    if not balanced:
+        classifier = DecisionTreeClassifier(class_weight={0: fp_weight, 1: fn_weight}, random_state=0)
+    else:
+        classifier = DecisionTreeClassifier(class_weight='balanced', random_state=0)
 else:
-    classifier = LogisticRegression(class_weight='balanced', max_iter=max_iterations)
+    print("error: shouldn't get here")
 # Resource: https://fraud-detection-handbook.github.io/fraud-detection-handbook/Chapter_6_ImbalancedLearning/CostSensitive.html
 # {0:c10 (FP), 1:c01 (FN)}: The misclassification costs are explicitly set for the two classes by means of a dictionary.
 # Conf matrix: [c00,     c01(FN)]
@@ -129,8 +142,7 @@ else:
 
 print('The classifier trained below is: ', model_name)
 
-# Reference: https://www.datacamp.com/community/tutorials/decision-tree-classification-python
-np.random.seed(0)
+
 
 # Train the classifier:
 model = classifier.fit(X_train,y_train, sample_weight_train)

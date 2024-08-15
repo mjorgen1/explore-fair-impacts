@@ -2,15 +2,19 @@ import pandas as pd
 import os
 import numpy as np
 import sys
+import warnings
 sys.path.append('../')
 
 from sklearn.model_selection import train_test_split
 from scripts.evaluation_utils import evaluating_model_german
 from scripts.classification_utils import load_args,prep_data,get_classifier, get_new_scores, add_constraint_and_evaluate,add_values_in_dict, save_dict_in_csv
 from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
 
 
 scaler = StandardScaler().set_output(transform="pandas")
+warnings.filterwarnings('ignore', category=FutureWarning)
 
 """
 DATA PREPARATION
@@ -44,12 +48,12 @@ y = y_changed_0s.replace(to_replace=2, value=1)
 PARAMETER SETTING
 """
 
-results_path = 'german_results/german_unmit_testing/' # directory to save the results
+results_path = 'german_results/testing_notscript_UNMIT/' # directory to save the results
 weight_idx = 1 # weight index for samples (1 in our runs)
 test_size = 0.3 # proportion of testset samples in the dataset (e.g. 0.3)
 save = True # indicator if the results should be saved
-models = {'Decision Tree': 'dt', 'Gaussian Naive Bayes':'gnb','Logistic Regression': 'lgr', 'Gradient Boosted Trees': 'gbt'}
-model_name = models['Gradient Boosted Trees']
+models = {'Decision Tree': 'dt', 'Logistic Regression': 'lgr'}
+model_name = models['Logistic Regression']
 scale_data = False
 constraint_str = 'Unmit'
 run_key = f'{model_name+constraint_str}'
@@ -107,10 +111,13 @@ MODEL TRAINING
 """
 
 print('The classifier trained below is: ', model_name)
-classifier = get_classifier(model_name)
-
-# Reference: https://www.datacamp.com/community/tutorials/decision-tree-classification-python
-np.random.seed(0)
+if model_name == 'dt':
+    classifier = DecisionTreeClassifier(random_state=0)
+elif model_name == 'lgr':
+    # Reference: https://towardsdatascience.com/logistic-regression-using-python-sklearn-numpy-mnist-handwriting-recognition-matplotlib-a6b31e2b166a
+    classifier = LogisticRegression(max_iter=100000, random_state=0)
+else:
+    print("error: input an acceptable model name acronoym")
 
 # Train the classifier:
 if scale_data:

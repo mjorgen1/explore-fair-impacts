@@ -2,19 +2,23 @@ import pandas as pd
 import os
 import numpy as np
 import sys
+import warnings
 sys.path.append('../')
-
 from sklearn.model_selection import train_test_split
 from scripts.evaluation_utils import evaluating_model_german
 from scripts.classification_utils import get_classifier,add_values_in_dict, save_dict_in_csv, get_constraint
 from fairlearn.reductions import ExponentiatedGradient, DemographicParity, EqualizedOdds, TruePositiveRateParity,FalsePositiveRateParity, ErrorRateParity
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
 
 
+warnings.filterwarnings('ignore', category=FutureWarning)
 
 
 """
 DATA PREPARATION
 """
+
 german_data = pd.read_csv(filepath_or_buffer='german_data.csv')
 
 print(german_data)
@@ -44,16 +48,16 @@ y = y_changed_0s.replace(to_replace=2, value=1)
 PARAMETER SETTING
 """
 # 'DP': DemographicParity, 'EO': EqualizedOdds, 'TPRP': TruePositiveRateParity, 'FPRP': FalsePositiveRateParity, 'ERP': ErrorRateParity
-constraint_str = 'ERP'
+constraint_str = 'TPRP'
 constraint = get_constraint(constraint_str)
 
 results_path = 'german_results/german_mit_TESTING/' # directory to save the results
 weight_idx = 1 # weight index for samples (1 in our runs)
 test_size = 0.3 # proportion of testset samples in the dataset (e.g. 0.3)
 save = True # indicator if the results should be saved
-models = {'Decision Tree': 'dt', 'Gaussian Naive Bayes':'gnb','Logistic Regression': 'lgr', 'Gradient Boosted Trees': 'gbt'}
-model_name = models['Gradient Boosted Trees']
-run_key = f'{model_name+constraint_str}-mitigated'
+models = {'Decision Tree': 'dt','Logistic Regression': 'lgr'}
+model_name = models['Decision Tree']
+run_key = f'{model_name+constraint_str}'
 results_path_full = results_path+model_name+constraint_str+'/'
 
 os.makedirs(results_path_full, exist_ok=True)
@@ -81,31 +85,34 @@ elif weight_idx == 0:
     print('Sample weights are NOT all equal.')
 
 # NOTE:
-    # Adult (advantaged) is 1
-    # Youth (disadvantaged) is 0
-    train_age = X_train['age']
-    test_age = X_test['age']
+# Adult (advantaged) is 1
+# Youth (disadvantaged) is 0
+train_age = X_train['age']
+test_age = X_test['age']
 
-    # NOTE: these are all pandas series
-    train_credit = X_train['credit_amount']
-    test_credit = X_test['credit_amount']
+# NOTE: these are all pandas series
+train_credit = X_train['credit_amount']
+test_credit = X_test['credit_amount']
 
-    # use x to check month data
-    #months = x['month']
-    # print(months.max())     # 72
-    # print(months.min())     # 4
-    # print(months.mean())    # 20.903
-    # print(months.median()) # 18 median
+# use x to check month data
+#months = x['month']
+# print(months.max())     # 72
+# print(months.min())     # 4
+# print(months.mean())    # 20.903
+# print(months.median()) # 18 median
 
 """
 MODEL TRAINING
 """
 
 print('The classifier trained below is: ', model_name)
-classifier = get_classifier(model_name)
-
-# Reference: https://www.datacamp.com/community/tutorials/decision-tree-classification-python
-np.random.seed(0)
+if model_name == 'dt':
+    classifier = DecisionTreeClassifier(random_state=0)
+elif model_name == 'lgr':
+    # Reference: https://towardsdatascience.com/logistic-regression-using-python-sklearn-numpy-mnist-handwriting-recognition-matplotlib-a6b31e2b166a
+    classifier = LogisticRegression(max_iter=100000, random_state=0)
+else:
+    print("error: input an acceptable model name acronoym")
 
 # Train the classifier:
 model = classifier.fit(X_train,y_train, sample_weight_train)
@@ -124,7 +131,7 @@ REDUCTION ALGORITHMS TIME!!!!
 mitigator = ExponentiatedGradient(model, constraint)
 
 mitigator.fit(X_train, y_train, sensitive_features=train_age)
-y_pred_mitigated = mitigator.predict(X_test)  # y_pred_mitigated
+y_pred_mitigated = mitigator.predict(X_test, random_state = 0)  # y_pred_mitigated
 
 
 """
@@ -135,7 +142,7 @@ young_results_dict = {}
 old_results_dict = {}
 combined_results_dict = {}
 
-results_overall, results_young, results_old = evaluating_model_german(constraint_str,X_test,y_test, y_predict, test_credit, sample_weight_test,test_age)
+results_overall, results_young, results_old = evaluating_model_german(constraint_str,X_test,y_test, y_pred_mitigated, test_credit, sample_weight_test,test_age)
 #  results_overall  =  [accuracy, cs_matrix, f1_micro, f1_weighted, f1_binary, round(sr*100, 2), tnr, tpr, fner, fper, i_youth, i_old, round(dp_diff*100, 2), round(eod_diff*100, 2), round(eoo_dif*100, 2), round(fpr_dif*100, 2), round(er_dif*100, 2)]
 #  results_young    =  [accuracy_1, cs_m_1, f1_m_1, f1_w_1, f1_b_1, sr_1, tnr_1, tpr_1, fner_1, fper_1, impact]
 #  results_old    =  [accuracy_0, cs_m_0, f1_m_0, f1_w_0, f1_b_0, sr_0, tnr_0, tpr_0, fner_0, fper_0, impact]
