@@ -7,7 +7,6 @@ sys.path.append('../')
 from sklearn.model_selection import train_test_split
 from scripts.evaluation_utils import evaluating_model_german
 from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import GradientBoostingClassifier
 from scripts.classification_utils import load_args,prep_data,get_classifier, get_new_scores, add_constraint_and_evaluate,add_values_in_dict, save_dict_in_csv
 
 
@@ -96,30 +95,23 @@ elif weight_idx == 0:
 train_age = X_train['age']
 test_age = X_test['age']
 
+# NOTE:
+# Adult (advantaged) is 1
+# Youth (disadvantaged) is 0
+train_age = X_train['age']
+test_age = X_test['age']
+
 # NOTE: these are all pandas series
 train_credit = X_train['credit_amount']
-train_month = X_train['month']
 test_credit = X_test['credit_amount']
-test_month = X_test['month']
 
 # use x to check month data
-months = x['month']
-#print(months.max())     # 72
-#print(months.min())     # 4
-#print(months.mean())    # 20.903
-#print(months.median()) # 18 median
+#months = x['month']
+# print(months.max())     # 72
+# print(months.min())     # 4
+# print(months.mean())    # 20.903
+# print(months.median()) # 18 median
 
-# array to collect the values
-test_4month_credit_arr = []
-
-# calculate 4 months worth of credit for ppl
-for index, credit_amt in enumerate(test_credit):
-    #print(credit_amt)
-    test_4month_credit_arr.append((credit_amt / test_month.loc[index]) * 4)
-
-test_4months_credit = pd.Series(data = test_4month_credit_arr)
-# NOTE: the below pandas series contains the numbers that we're adding / subtracting depending on the outcome
-#print(test_4months_credit)
 
 
 """
@@ -159,7 +151,7 @@ young_results_dict = {}
 old_results_dict = {}
 combined_results_dict = {}
 
-results_overall, results_young, results_old = evaluating_model_german(constraint_str,X_test,y_test, y_predict, test_4months_credit, sample_weight_test,test_age)
+results_overall, results_young, results_old = evaluating_model_german(constraint_str,X_test,y_test, y_predict, test_credit, sample_weight_test,test_age)
 #  results_overall  =  [accuracy, cs_matrix, f1_micro, f1_weighted, f1_binary, round(sr*100, 2), tnr, tpr, fner, fper, i_youth, i_old, round(dp_diff*100, 2), round(eod_diff*100, 2), round(eoo_dif*100, 2), round(fpr_dif*100, 2), round(er_dif*100, 2)]
 #  results_young    =  [accuracy_1, cs_m_1, f1_m_1, f1_w_1, f1_b_1, sr_1, tnr_1, tpr_1, fner_1, fper_1, impact]
 #  results_old    =  [accuracy_0, cs_m_0, f1_m_0, f1_w_0, f1_b_0, sr_0, tnr_0, tpr_0, fner_0, fper_0, impact]

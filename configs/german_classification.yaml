@@ -1,0 +1,20 @@
+data_path: 'german_credit/german_data.csv' # path to the dataset csv-file
+results_dir: 'german_results/testing_script_UNMIT/' # directory to save the results
+weight_idx: 1 # weight index for samples (1 in our runs)
+testset_size: 0.3 # proportion of testset samples in the dataset (e.g. 0.3)
+mitigated: 0       # 0: unmitigated, 1: reductions, 2: cost_sensitive
+balanced: False   # this can be True if mitigated == 2
+costs_FP: 0
+costs_FN: 0
+# if both of the above costs are 0, then that means balanced should be selected
+models: # classifiers used for training
+  #Decision Tree: 'dt'
+  #Gaussian Naive Bayes: 'gnb'
+  Logistic Regression: 'lgr'  # TODO: check cuz this might need to be capitalized?
+constraints: # fairness constraints used for training different models
+  Demographic Parity: 'DP'
+  #Equalized Odds: 'EO'
+  #Equality of Opportunity: 'TPRP'
+  #False Positive Rate Parity: 'FPRP'
+  #Error Rate Parity: 'ERP'
+save: True # indicator if the results should be saved
