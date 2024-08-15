@@ -48,7 +48,7 @@ y = y_changed_0s.replace(to_replace=2, value=1)
 PARAMETER SETTING
 """
 
-results_path = 'german_results/testing_notscript_UNMIT/' # directory to save the results
+results_path = 'german_results/unmit/' # directory to save the results
 weight_idx = 1 # weight index for samples (1 in our runs)
 test_size = 0.3 # proportion of testset samples in the dataset (e.g. 0.3)
 save = True # indicator if the results should be saved

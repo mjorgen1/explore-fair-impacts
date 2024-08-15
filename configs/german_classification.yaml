@@ -1,5 +1,5 @@
 data_path: 'german_credit/german_data.csv'                        # path to the dataset csv-file
-results_dir: 'german_credit/german_results/testing_script_cost/' # directory to save the results
+results_dir: 'german_credit/german_results/cost/' # directory to save the results
 weight_idx: 1                                                     # weight index for samples (1 in our runs)
 testset_size: 0.3                                                 # proportion of testset samples in the dataset
 mitigated: 2                                                      # 0: unmitigated, 1: reductions, 2: cost_sensitive

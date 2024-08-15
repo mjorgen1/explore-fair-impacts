@@ -55,7 +55,7 @@ balanced = False
 # this is what the lgr for the unmitigated lgr is
 max_iterations = 100000
 
-results_path = 'german_results/testing_cost/' # directory to save the results
+results_path = 'german_results/cost_sens/' # directory to save the results
 weight_idx = 1 # weight index for samples (1 in our runs)
 test_size = 0.3 # proportion of testset samples in the dataset (e.g. 0.3)
 save = True # indicator if the results should be saved

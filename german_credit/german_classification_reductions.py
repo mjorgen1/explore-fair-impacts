@@ -51,7 +51,7 @@ PARAMETER SETTING
 constraint_str = 'TPRP'
 constraint = get_constraint(constraint_str)
 
-results_path = 'german_results/german_mit_TESTING/' # directory to save the results
+results_path = 'german_results/reductions/' # directory to save the results
 weight_idx = 1 # weight index for samples (1 in our runs)
 test_size = 0.3 # proportion of testset samples in the dataset (e.g. 0.3)
 save = True # indicator if the results should be saved
