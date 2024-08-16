@@ -201,16 +201,43 @@ def ml_pipeline(data_path, results_dir, weight_idx, testset_size, mitigated, bal
 
     if mitigated == 0 or mitigated == 2:  # if unmitigated or cost then...
         print('made it in the correct evaluations line for unmit and cost-sensitive')
-        results_overall, results_young, results_old = evaluating_model_german(constraint_str, X_test, y_test, y_predict,
+        results_overall, results_young, results_old, impact_focused_results_young, impact_focused_results_old = evaluating_model_german(constraint_str, X_test, y_test, y_predict,
                                                                           test_credit, sample_weight_test,
                                                                           test_age)
     elif mitigated == 1:  # if reductions alg then...
         print("made it in the correct evaluations line for reductions")
-        results_overall, results_young, results_old = evaluating_model_german(constraint_str, X_test, y_test, y_pred_mitigated,
+        results_overall, results_young, results_old, impact_focused_results_young, impact_focused_results_old = evaluating_model_german(constraint_str, X_test, y_test, y_pred_mitigated,
                                                                           test_credit, sample_weight_test,
                                                                           test_age)
     else:
         print("you shouldn't end up here...")
+
+    # TESTING THE NEW PANDAS dfs
+    #print(impact_focused_results_young)
+    #print(impact_focused_results_old)
+
+    # TODO: add some analysis of the pandas df like I did INSIDE of the calculate impact german function
+    # TODO: once the below is done, add it to the other scripts!!
+    # TODO: add some kind of csv savings for these dfs
+    # calculate median values of each group after taking out the 0s
+    #print('score_youth', score_youth)
+    '''
+    score_youth_nozeros = [i for i in score_youth if i != 0]
+    score_old_nozeros = [i for i in score_old if i != 0]
+
+    print('# of youths: ', len(score_youth))
+    score_youth_nozeros = [i for i in score_youth if i != 0]
+    print('# of youths WITHOUT 0: ', len(score_youth_nozeros))
+    print('median of score_youth updated', median(score_youth_nozeros))
+    print('score_youth updated: ', score_youth_nozeros)
+
+    print('# of olds: ', len(score_old))
+    score_old_nozeros = [i for i in score_old if i != 0]
+    print('# of olds WITHOUT 0: ', len(score_old_nozeros))
+    print('median of score_old updated: ', median(score_old_nozeros))
+    print('score_old updated: ', score_old_nozeros)
+    '''
+
     #  results_overall  =  [accuracy, cs_matrix, f1_micro, f1_weighted, f1_binary, round(sr*100, 2), tnr, tpr, fner, fper, i_youth, i_old, round(dp_diff*100, 2), round(eod_diff*100, 2), round(eoo_dif*100, 2), round(fpr_dif*100, 2), round(er_dif*100, 2)]
     #  results_young    =  [accuracy_1, cs_m_1, f1_m_1, f1_w_1, f1_b_1, sr_1, tnr_1, tpr_1, fner_1, fper_1, impact]
     #  results_old    =  [accuracy_0, cs_m_0, f1_m_0, f1_w_0, f1_b_0, sr_0, tnr_0, tpr_0, fner_0, fper_0, impact]

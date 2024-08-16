@@ -163,7 +163,7 @@ young_results_dict = {}
 old_results_dict = {}
 combined_results_dict = {}
 
-results_overall, results_young, results_old = evaluating_model_german(constraint_str,X_test,y_test, y_predict, test_credit, sample_weight_test,test_age)
+results_overall, results_young, results_old, impact_focused_results_young, impact_focused_results_old = evaluating_model_german(constraint_str,X_test,y_test, y_predict, test_credit, sample_weight_test,test_age)
 #  results_overall  =  [accuracy, cs_matrix, f1_micro, f1_weighted, f1_binary, round(sr*100, 2), tnr, tpr, fner, fper, i_youth, i_old, round(dp_diff*100, 2), round(eod_diff*100, 2), round(eoo_dif*100, 2), round(fpr_dif*100, 2), round(er_dif*100, 2)]
 #  results_young    =  [accuracy_1, cs_m_1, f1_m_1, f1_w_1, f1_b_1, sr_1, tnr_1, tpr_1, fner_1, fper_1, impact]
 #  results_old    =  [accuracy_0, cs_m_0, f1_m_0, f1_w_0, f1_b_0, sr_0, tnr_0, tpr_0, fner_0, fper_0, impact]

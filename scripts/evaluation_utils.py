@@ -348,50 +348,78 @@ def calculate_impact_german(y_test, y_pred, loan_val, sensitive_attr_test):
             - i_youth <float>: impact for group youth
             - i_old <float>: impact for group old
     """
+    # TODO: update the comments above
 
     score_youth, score_old = [], []
+    outcome_youth, outcome_old = [], []
+    loan_request_youth, loan_request_old = [], []
 
     for index, true_label in enumerate(y_test):
-        # the credit requested by a given applicant for a 4 month period
+        # the credit requested by a given applicant
         score = loan_val[index]
+
+        if sensitive_attr_test[index] == 0:  # young borrower
+            loan_request_youth.append(score)
+        elif sensitive_attr_test[index] == 1:  # old borrower
+            loan_request_old.append(score)
         # check for TPs
         if true_label == y_pred[index] and true_label == 1:
             if sensitive_attr_test[index] == 0:  # young borrower
                     score_youth.append(score)
+                    outcome_youth.append('TP')
             elif sensitive_attr_test[index] == 1:  # old borrower
                     score_old.append(score)
+                    outcome_old.append('TP')
         # check for FPs
         elif true_label == 0 and y_pred[index] == 1:
             if sensitive_attr_test[index] == 0:  # young borrower
                 score_youth.append(-score*1.5)
+                outcome_youth.append('FP')
             elif sensitive_attr_test[index] == 1:  # old borrower
                 score_old.append(-score*1.5)
-        else:  # the rest are TNs or FNs
+                outcome_old.append('FP')
+        # check for TN
+        elif true_label == 0 and y_pred[index] == 0:  # the rest are TNs or FNs
             if sensitive_attr_test[index] == 0:  # youth indiv
                 score_youth.append(0)
+                outcome_youth.append('TN')
             elif sensitive_attr_test[index] == 1:  # old indiv
                 score_old.append(0)
+                outcome_old.append('TN')
+        # check for FN
+        elif true_label == 1 and y_pred[index] == 0:
+            if sensitive_attr_test[index] == 0:  # youth indiv
+                score_youth.append(0)
+                outcome_youth.append('FN')
+            elif sensitive_attr_test[index] == 1:  # old indiv
+                score_old.append(0)
+                outcome_old.append('FN')
 
-    # TODO: I might need to remove the 0s to make the median work?? I guess this depends on the confusion matrix...
     # calculate median values of each group after taking out the 0s
     #print('score_youth', score_youth)
-    print('# of youths: ', len(score_youth))
+    #print('# of youths: ', len(score_youth))
     score_youth_nozeros = [i for i in score_youth if i != 0]
-    print('# of youths WITHOUT 0: ', len(score_youth_nozeros))
-    print('median of score_youth updated', median(score_youth_nozeros))
-    print('score_youth updated: ', score_youth_nozeros)
+    #print('# of youths WITHOUT 0: ', len(score_youth_nozeros))
+    #print('median of score_youth updated', median(score_youth_nozeros))
+    #print('score_youth updated: ', score_youth_nozeros)
 
-    print('# of olds: ', len(score_old))
+    #print('# of olds: ', len(score_old))
     score_old_nozeros = [i for i in score_old if i != 0]
-    print('# of olds WITHOUT 0: ', len(score_old_nozeros))
-    print('median of score_old updated: ', median(score_old_nozeros))
-    print('score_old updated: ', score_old_nozeros)
+    #print('# of olds WITHOUT 0: ', len(score_old_nozeros))
+    #print('median of score_old updated: ', median(score_old_nozeros))
+    #print('score_old updated: ', score_old_nozeros)
 
     #print('score_old', score_old)
     i_youth = median(score_youth_nozeros)
     i_old = median(score_old_nozeros)
 
-    return i_youth, i_old
+
+    results_youth = {'Model outcome': outcome_youth, 'Loan Requested': loan_request_youth, 'Impact Amt': score_youth}
+    results_old = {'Model outcome': outcome_old, 'Loan Requested': loan_request_old, 'Impact Amt': score_old}
+
+    # TODO: return a pandas(?? or array by group, model outcomes, loan requested, and impact
+
+    return i_youth, i_old, results_youth, results_old
 
 def evaluation_by_group_german(X_test, y_test, sensitive_attr_test, y_predict, credit_amount_4months, sample_weight):
     """
@@ -427,7 +455,7 @@ def evaluation_by_group_german(X_test, y_test, sensitive_attr_test, y_predict, c
     sr_bygroup = get_selection_rates(y_test, y_predict, sensitive_attr_test, 1)  #sr_bygroup is a pandas series
     sr_0 = round(sr_bygroup.values[0]*100, 2)
     sr_1 = round(sr_bygroup.values[1]*100, 2)
-    i_0, i_1 = calculate_impact_german(y_test, y_predict,credit_amount_4months, sensitive_attr_test)
+    i_0, i_1, finegrained_i_results_0, finegrained_i_results_1 = calculate_impact_german(y_test, y_predict,credit_amount_4months, sensitive_attr_test)
     results_youth = [accuracy_0, cs_m_0, f1_m_0, f1_w_0, f1_b_0, sr_0, tnr_0, tpr_0, fner_0, fper_0, round(i_0, 2)]
     results_old = [accuracy_1, cs_m_1, f1_m_1, f1_w_1, f1_b_1, sr_1, tnr_1, tpr_1, fner_1, fper_1, round(i_1, 2)]
 
@@ -455,7 +483,7 @@ def evaluating_model_german(constraint_str, X_test, y_test, y_pred, credit_amoun
                                                                                            sample_weight_test)
     sr = get_selection_rates(y_test, y_pred, sensitive_attr_test, 0)
     # print('\n')
-    i_youth, i_old = calculate_impact_german(y_test, y_pred, credit_amount_4months, sensitive_attr_test)
+    i_youth, i_old, finegrained_i_results_0, finegrained_i_results_1 = calculate_impact_german(y_test, y_pred, credit_amount_4months, sensitive_attr_test)
     # print('\nFairness metric evaluation of ', constraint_str, '-constrained classifier')
     dp_diff, eod_diff, eoo_dif, fpr_dif, er_dif = print_fairness_metrics(y_true=y_test, y_pred=y_pred,
                                                                          sensitive_features=sensitive_attr_test,
@@ -468,7 +496,7 @@ def evaluating_model_german(constraint_str, X_test, y_test, y_pred, credit_amoun
                                                sample_weight_test)
     # print('\n')
     # results 0 = youth, results 1 = old
-    return results_overall, results_0, results_1
+    return results_overall, results_0, results_1, finegrained_i_results_0, finegrained_i_results_1
 
 
 def calculate_delayed_impact(X_test, y_true, y_pred,di_means,di_stds, sensitive_attr_test):
