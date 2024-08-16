@@ -217,8 +217,7 @@ def ml_pipeline(data_path, results_dir, weight_idx, testset_size, mitigated, bal
     #print(impact_focused_results_old)
 
     # TODO: add some analysis of the pandas df like I did INSIDE of the calculate impact german function
-    # TODO: once the below is done, add it to the other scripts!!
-    # TODO: add some kind of csv savings for these dfs
+    # ^Or make that a separate script!!
     # calculate median values of each group after taking out the 0s
     #print('score_youth', score_youth)
     '''
@@ -271,7 +270,8 @@ def ml_pipeline(data_path, results_dir, weight_idx, testset_size, mitigated, bal
         save_dict_in_csv(old_results_dict, byage_fieldnames, results_path_full + model_name + '_old_results.csv')
         save_dict_in_csv(combined_results_dict, combined_fieldnames,
                          results_path_full + model_name + '_combined_results.csv')
-
+        impact_focused_results_young.to_csv(results_path_full + model_name + '_young_impact_results.csv', index=False)
+        impact_focused_results_young.to_csv(results_path_full + model_name + '_old_impact_results.csv', index=False)
 
 if __name__ == '__main__':
     #load arguments

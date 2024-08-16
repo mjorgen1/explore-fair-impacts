@@ -186,3 +186,5 @@ if save == True:
     save_dict_in_csv(young_results_dict, byage_fieldnames,  results_path_full+model_name+'_young_results.csv')
     save_dict_in_csv(old_results_dict, byage_fieldnames,  results_path_full+model_name+'_old_results.csv')
     save_dict_in_csv(combined_results_dict, combined_fieldnames, results_path_full+model_name+'_combined_results.csv')
+    impact_focused_results_young.to_csv(results_path_full + model_name + '_young_impact_results.csv', index=False)
+    impact_focused_results_young.to_csv(results_path_full + model_name + '_old_impact_results.csv', index=False)

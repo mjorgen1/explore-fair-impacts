@@ -416,10 +416,11 @@ def calculate_impact_german(y_test, y_pred, loan_val, sensitive_attr_test):
 
     results_youth = {'Model outcome': outcome_youth, 'Loan Requested': loan_request_youth, 'Impact Amt': score_youth}
     results_old = {'Model outcome': outcome_old, 'Loan Requested': loan_request_old, 'Impact Amt': score_old}
-
+    results_youth_df = pd.DataFrame(results_youth)
+    results_old_df = pd.DataFrame(results_old)
     # TODO: return a pandas(?? or array by group, model outcomes, loan requested, and impact
 
-    return i_youth, i_old, results_youth, results_old
+    return i_youth, i_old, results_youth_df, results_old_df
 
 def evaluation_by_group_german(X_test, y_test, sensitive_attr_test, y_predict, credit_amount_4months, sample_weight):
     """
