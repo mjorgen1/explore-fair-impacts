@@ -76,7 +76,14 @@ def ml_pipeline(data_path, results_dir, weight_idx, testset_size, mitigated, bal
     if model_name == 'lgr':
         max_iterations = 100000
 
-    if mitigated == 2:
+
+    if mitigated == 0:
+        run_key = f'{model_name}'
+        results_path_full = results_path + model_name + '/'
+    elif mitigated == 1:
+        run_key = f'{model_name + constraint_name}'
+        results_path_full = results_path + model_name + constraint_str + '/'
+    elif mitigated == 2:
         if balanced:
             run_key = f'{model_name}cost-balance'
             results_path_full = results_path + model_name + f'/cost-balance/'
@@ -84,8 +91,7 @@ def ml_pipeline(data_path, results_dir, weight_idx, testset_size, mitigated, bal
             run_key = f'{model_name}cost-fp{fp_weight}-fn{fn_weight}'
             results_path_full = results_path + model_name + f'/cost-fp{fp_weight}-fn{fn_weight}/'
     else:
-        run_key = f'{model_name + constraint_name}'
-        results_path_full = results_path + model_name + constraint_str + '/'
+        print('error: invalid mitigated value in yaml')
 
     os.makedirs(results_path_full, exist_ok=True)
     # old bit:
