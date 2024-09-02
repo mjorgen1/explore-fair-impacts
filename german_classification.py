@@ -12,12 +12,12 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
 from scripts.evaluation_utils import evaluating_model_german
 from scripts.classification_utils import get_classifier,add_values_in_dict, save_dict_in_csv, get_constraint
-from fairlearn.reductions import ExponentiatedGradient, DemographicParity, EqualizedOdds, TruePositiveRateParity,FalsePositiveRateParity, ErrorRateParity
+from fairlearn.reductions import ExponentiatedGradient, GridSearch, DemographicParity, EqualizedOdds, TruePositiveRateParity,FalsePositiveRateParity, ErrorRateParity
 
 
 
 
-def ml_pipeline(data_path, results_dir, weight_idx, testset_size, mitigated, balanced, fp_weight, fn_weight, model_name, constraint_name, save):
+def ml_pipeline(data_path, results_dir, weight_idx, testset_size, mitigated, balanced, fp_weight, fn_weight, model_name, reduction_algo, constraint_name, save):
     """
     Classification and evaluation function for the german datasets
     Args:
@@ -160,10 +160,20 @@ def ml_pipeline(data_path, results_dir, weight_idx, testset_size, mitigated, bal
         #test_scores = model.predict_proba(X_test)[:, 1]
         if mitigated == 1:
             print("made it in the reductions thread")
-            mitigator = ExponentiatedGradient(model, constraint)
+            print('the reduction algorithm is: ', reduction_algo)
+            if reduction_algo == 'GS':
+                mitigator = GridSearch(model, constraint)
+            elif reduction_algo == 'EG':
+                mitigator = ExponentiatedGradient(model, constraint)
+            else:
+                print('error: you shouldnt get here...check the yaml parameters and input one of the two reduction algorithms.')
 
             mitigator.fit(X_train, y_train, sensitive_features=train_age)
-            y_pred_mitigated = mitigator.predict(X_test, random_state = 0)  # y_pred_mitigated
+
+            if reduction_algo == 'GS':
+                y_pred_mitigated = mitigator.predict(X_test)  # y_pred_mitigated
+            elif reduction_algo == 'EG':
+                y_pred_mitigated = mitigator.predict(X_test, random_state = 0)  # y_pred_mitigated
 
     # COST-SENSITIVE CLASSIFICATION
     elif mitigated == 2:

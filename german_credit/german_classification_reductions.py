@@ -7,7 +7,7 @@ sys.path.append('../')
 from sklearn.model_selection import train_test_split
 from scripts.evaluation_utils import evaluating_model_german
 from scripts.classification_utils import get_classifier,add_values_in_dict, save_dict_in_csv, get_constraint
-from fairlearn.reductions import ExponentiatedGradient, DemographicParity, EqualizedOdds, TruePositiveRateParity,FalsePositiveRateParity, ErrorRateParity
+from fairlearn.reductions import ExponentiatedGradient, GridSearch, DemographicParity, EqualizedOdds, TruePositiveRateParity,FalsePositiveRateParity, ErrorRateParity
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 
@@ -50,6 +50,8 @@ PARAMETER SETTING
 # 'DP': DemographicParity, 'EO': EqualizedOdds, 'TPRP': TruePositiveRateParity, 'FPRP': FalsePositiveRateParity, 'ERP': ErrorRateParity
 constraint_str = 'TPRP'
 constraint = get_constraint(constraint_str)
+# 'GS': Grid Search, 'EG': Exponentiated Gradient
+reduction_algo = 'GS'
 
 results_path = 'german_results/reductions/' # directory to save the results
 weight_idx = 1 # weight index for samples (1 in our runs)
@@ -128,10 +130,19 @@ test_scores = model.predict_proba(X_test)[:, 1]
 REDUCTION ALGORITHMS TIME!!!!
 """
 
-mitigator = ExponentiatedGradient(model, constraint)
+if reduction_algo == 'GS':
+    mitigator = GridSearch(model, constraint)
+elif reduction_algo == 'EG':
+    mitigator = ExponentiatedGradient(model, constraint)
+else:
+    print('error: you shouldnt get here...check the yaml parameters and input one of the two reduction algorithms.')
 
 mitigator.fit(X_train, y_train, sensitive_features=train_age)
-y_pred_mitigated = mitigator.predict(X_test, random_state = 0)  # y_pred_mitigated
+
+if reduction_algo == 'GS':
+    y_pred_mitigated = mitigator.predict(X_test)  # y_pred_mitigated
+elif reduction_algo == 'EG':
+    y_pred_mitigated = mitigator.predict(X_test, random_state=0)  # y_pred_mitigated
 
 
 """

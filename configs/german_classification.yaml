@@ -1,13 +1,17 @@
 data_path: 'german_credit/german_data.csv'                        # path to the dataset csv-file
-results_dir: 'german_credit/german_results/mit-costs/' # directory to save the results
+results_dir: 'german_credit/german_results/mit-reducts/' # directory to save the results
+
+                                                                  # for reduction runs: 'german_credit/german_results/mit-reducts/
+                                                                  # for cost-sens runs: 'german_credit/german_results/mit-costs/'
 weight_idx: 1                                                     # weight index for samples (1 in our runs)
 testset_size: 0.3                                                 # proportion of testset samples in the dataset
-mitigated: 2                                                     # 0: unmitigated, 1: reductions, 2: cost_sensitive
-balanced: False                                                   # this can be True if mitigated == 2
-fp_weight: 3
-fn_weight: 2
+mitigated: 1                                                     # 0: unmitigated, 1: reductions, 2: cost_sensitive
+balanced: True                                                   # this can be True if mitigated == 2
+fp_weight: 6
+fn_weight: 5
 model_name: 'lgr'                                                 # classifier, 'dt' or 'lgr', used for training
-constraint_name: 'ERP'                                            # fairness constraints used for reductions
+reduction_algo: 'GS'                                              # exponentiated gradient, 'EG' or 'GS'
+constraint_name: 'FPRP'                                            # fairness constraints used for reductions
                                                                   #Demographic Parity: 'DP'
                                                                   #Equalized Odds: 'EO'
                                                                   #Equality of Opportunity: 'TPRP'
