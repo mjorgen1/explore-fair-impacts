@@ -7,8 +7,11 @@ import csv
 from scripts.evaluation_utils import evaluating_model_updated
 from scripts.visualization_utils import visual_label_dist, visual_scores_by_race
 from scripts.classification_utils import load_args, prep_data, get_classifier, get_new_scores_updated, \
-    add_constraint_and_evaluate, add_values_in_dict, save_dict_in_csv
+    add_constraint_and_evaluate, add_values_in_dict, save_dict_in_csv, add_constraint_and_evaluate_updated
 
+
+# NOTE: this is the script I ran my 'loan_results-updated-impact-func/demo-0-lab-0' results from June 24 2024
+# it needs -config classification.yaml to run
 
 def classify(data_path, results_dir, weight_idx, testset_size, test_set_variant, test_set_bound, di_means, di_stds,
              models, constraints, save):
@@ -131,7 +134,8 @@ def classify(data_path, results_dir, weight_idx, testset_size, test_set_variant,
         # train all constrained model for this model type
         for constraint_str in constraints.values():
             print(constraint_str)
-            mitigator, results_overall, results_black, results_white, y_pred_mitigated = add_constraint_and_evaluate(
+
+            mitigator, results_overall, results_black, results_white, y_pred_mitigated = add_constraint_and_evaluate_updated(
                 model, constraint_str, X_train, y_train, race_train, race_test, X_test, y_test, y_predict,
                 sample_weight_test, False, di_means, di_stds, )
 
