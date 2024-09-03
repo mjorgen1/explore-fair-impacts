@@ -68,6 +68,7 @@ model_name = models['Logistic Regression']
 overall_results_dict = {}
 black_results_dict = {}
 white_results_dict = {}
+combined_results_dict = {}
 all_types = []
 all_scores = []
 scores_names = []
@@ -126,35 +127,33 @@ test_scores = model.predict_proba(X_test)[:, 1]
 X_unmit_b, X_unmit_w,T_unmit_b, T_unmit_w = get_new_scores_updated(X_test, y_predict, y_test, di_means, di_stds, race_test)
 
 constraint_str = 'Cost-'
+# results_overall = accuracy, cs_matrix, f1_micro, f1_weighted, f1_binary, round(sr * 100, 2), tnr, tpr, fner, fper,
+#                        di_B, di_W, round(dp_diff * 100, 2), round(eod_diff * 100, 2), round(eoo_dif * 100, 2),
+#                        round(fpr_dif * 100, 2), round(er_dif * 100, 2)]
+# results_0 = [accuracy_0, cs_m_0, f1_m_0, f1_w_0, f1_b_0, sr_0, tnr_0, tpr_0, fner_0, fper_0, round(di_0, 2)]
+# results_1 = [accuracy_1, cs_m_1, f1_m_1, f1_w_1, f1_b_1, sr_1, tnr_1, tpr_1, fner_1, fper_1, round(di_1, 2)]
 results_overall, results_black, results_white = evaluating_model_updated(constraint_str,X_test,y_test, y_predict, di_means,di_stds, sample_weight_test,race_test)
+combined_results = [results_overall[3], results_overall[0], results_overall[5], results_overall[6],
+                    results_overall[7], results_overall[8], results_overall[9], results_overall[10],
+                    results_overall[11], results_black[6], results_black[7], results_black[8], results_black[9],
+                    results_white[6], results_white[7], results_white[8], results_white[9]]
+
 
 run_key = f'{model_name}cost-fp{fp_weight}-fn{fn_weight}'
 overall_results_dict = add_values_in_dict(overall_results_dict, run_key, results_overall)
 black_results_dict = add_values_in_dict(black_results_dict, run_key, results_black)
 white_results_dict = add_values_in_dict(white_results_dict, run_key, results_white)
+combined_results_dict = add_values_in_dict(combined_results_dict, run_key, combined_results)
 
 # To use below!!
 if save == True:
     overall_fieldnames = ['Run', 'Acc', 'ConfMatrix','F1micro', 'F1weighted','F1binary', 'SelectionRate', 'TNR rate', 'TPR rate', 'FNER', 'FPER', 'DIB','DIW', 'DP Diff', 'EO Diff', 'TPR Diff', 'FPR Diff', 'ER Diff']
     byrace_fieldnames = ['Run', 'Acc', 'ConfMatrix','F1micro', 'F1weighted','F1binary', 'SelectionRate', 'TNR rate', 'TPR rate', 'FNER', 'FPER', 'DI']
+    combined_fieldnames = ['Run', 'F1_weighted', 'Acc', 'SelectionRate', 'TNR', 'TPR', 'FNER', 'FPER',
+                           'Black Impact', 'White Impact', 'TNR_B', 'TPR_B', 'FNER_B', 'FPER_B', 'TNR_W', 'TPR_W',
+                           'FNER_W', 'FPER_W']
     save_dict_in_csv(overall_results_dict, overall_fieldnames,  results_path+model_name+'_overall_results.csv')
     save_dict_in_csv(black_results_dict, byrace_fieldnames,  results_path+model_name+'_black_results.csv')
     save_dict_in_csv(white_results_dict, byrace_fieldnames,  results_path+model_name+'_white_results.csv')
-
-"""
-if save == True:
-    # Save overall score results
-    columns_data_scores = zip_longest(*all_scores)
-    columns_data_types = zip_longest(*all_types)
-
-    with open(results_path+model_name+'_all_scores.csv',mode='w') as f:
-            writer = csv.writer(f)
-            writer.writerow(scores_names)
-            writer.writerows(columns_data_scores)
-            f.close()
-    with open(results_path+model_name+'_all_types.csv',mode='w') as f:
-        writer = csv.writer(f)
-        writer.writerow(scores_names)
-        writer.writerows(columns_data_types)
-        f.close()
-"""
+    save_dict_in_csv(combined_results_dict, combined_fieldnames,
+                     results_path + model_name + '_combined_results.csv')

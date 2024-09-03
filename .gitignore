@@ -114,3 +114,7 @@ data/
 
 # idea folder
 .idea/
+
+# results folders
+german_credit/german_results/
+results-updated-impact-func/
