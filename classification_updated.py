@@ -7,14 +7,16 @@ import csv
 from scripts.evaluation_utils import evaluating_model_updated
 from scripts.visualization_utils import visual_label_dist, visual_scores_by_race
 from scripts.classification_utils import load_args, prep_data, get_classifier, get_new_scores_updated, \
-    add_constraint_and_evaluate, add_values_in_dict, save_dict_in_csv, add_constraint_and_evaluate_updated
+    add_constraint_and_evaluate, add_values_in_dict, save_dict_in_csv, add_constraint_and_evaluate_updated, get_constraint
+from fairlearn.reductions import ExponentiatedGradient, GridSearch, DemographicParity, EqualizedOdds, TruePositiveRateParity,FalsePositiveRateParity, ErrorRateParity
+
 
 
 # NOTE: this is the script I ran my 'loan_results-updated-impact-func/demo-0-lab-0' results from June 24 2024
 # it needs -config classification.yaml to run
 
 def classify(data_path, results_dir, weight_idx, testset_size, test_set_variant, test_set_bound, di_means, di_stds,
-             models, constraints, save):
+             models, constraints, reduction_algo, save):
     """
     Classification and evaluation function for the synthetic datasets (based on FICO-data), able to train many models (different classifier or constraint) in one run.
     Args:
@@ -87,6 +89,7 @@ def classify(data_path, results_dir, weight_idx, testset_size, test_set_variant,
 
 
         # TODO: ADD BIT BELOW FOR FN TOO so we get scores and types for them in output
+        # ^this would just be used for evals after...not imperative
         T_test_b = ['TP' if e == 1 else "TN" for e in y_test_b]
         T_test_w = ['TP' if e == 1 else "TN" for e in y_test_w]
 
@@ -116,11 +119,11 @@ def classify(data_path, results_dir, weight_idx, testset_size, test_set_variant,
         results_overall, results_black, results_white = evaluating_model_updated(constraint_str, X_test, y_test, y_predict,
                                                                          di_means, di_stds, sample_weight_test,
                                                                          race_test)
-        # TODO: fix combined results piece cuz it's only saving one
+        # TODO: fix combined results piece cuz it's saving the same row multiple times
         #combined_results = [results_overall[3], results_overall[0], results_overall[5], results_overall[6],
-        #                    results_overall[7], results_overall[8], results_overall[9], results_black[10], results_white[10], results_black[6],
-        #                    results_black[7], results_black[8], results_black[9], results_white[6], results_white[7],
-        #                    results_white[8], results_white[9]]
+        #                    results_overall[7], results_overall[8], results_overall[9], results_overall[10],
+        #                    results_overall[11], results_black[6], results_black[7], results_black[8], results_black[9],
+        #                    results_white[6], results_white[7], results_white[8], results_white[9]]
 
 
         # adding results to dict
@@ -134,10 +137,31 @@ def classify(data_path, results_dir, weight_idx, testset_size, test_set_variant,
         # train all constrained model for this model type
         for constraint_str in constraints.values():
             print(constraint_str)
+            constraint = get_constraint(constraint_str)
+            print('the reduction algorithm is: ', reduction_algo)
 
-            mitigator, results_overall, results_black, results_white, y_pred_mitigated = add_constraint_and_evaluate_updated(
-                model, constraint_str, X_train, y_train, race_train, race_test, X_test, y_test, y_predict,
-                sample_weight_test, False, di_means, di_stds, )
+            # TODO: add in functionality to specify which reduction alg
+            if reduction_algo == 'GS':
+                mitigator = GridSearch(model, constraint)
+            elif reduction_algo == 'EG':
+                mitigator = ExponentiatedGradient(model, constraint)
+            else:
+                print('error: you shouldnt get here...check the yaml parameters and input one of the two reduction algorithms.')
+
+            mitigator.fit(X_train, y_train, sensitive_features=race_train)
+
+            if reduction_algo == 'GS':
+                y_pred_mitigated = mitigator.predict(X_test)  # y_pred_mitigated
+            elif reduction_algo == 'EG':
+                y_pred_mitigated = mitigator.predict(X_test, random_state = 0)  # y_pred_mitigated
+
+            #mitigator, results_overall, results_black, results_white, y_pred_mitigated = add_constraint_and_evaluate_updated(
+            #    model, constraint_str, X_train, y_train, race_train, race_test, X_test, y_test, y_predict,
+            #    sample_weight_test, False, di_means, di_stds, )
+
+            results_overall, results_black, results_white = evaluating_model_updated(constraint_str, X_test, y_test,
+                                                                                     y_predict, di_means, di_stds,
+                                                                                     sample_weight_test, race_test)
 
             # save scores in list
             X_b, X_w, T_b, T_w = get_new_scores_updated(X_test, y_pred_mitigated, y_test, di_means, di_stds, race_test)
@@ -145,7 +169,8 @@ def classify(data_path, results_dir, weight_idx, testset_size, test_set_variant,
             all_scores.extend([X_b, X_w])
             scores_names.extend([f'{constraint_str.lower()}B', f'{constraint_str.lower()}W'])
 
-            # TODO: fix bug with adding the constraint specific deets
+            # TODO: fix bug with adding the constraint specific deets for combined results
+            # need it to work like overall results
 
             run_key = f'{model_str} {constraint_str} Mitigated'
             overall_results_dict = add_values_in_dict(overall_results_dict, run_key, results_overall)
@@ -160,15 +185,14 @@ def classify(data_path, results_dir, weight_idx, testset_size, test_set_variant,
                                   'TPR Diff', 'FPR Diff', 'ER Diff']
             byrace_fieldnames = ['Run', 'Acc', 'ConfMatrix', 'F1micro', 'F1weighted', 'F1binary', 'SelectionRate',
                                  'TNR rate', 'TPR rate', 'FNER', 'FPER', 'DI']
-            #combined_fieldnames = ['Run', 'F1_weighted', 'Acc', 'SelectionRate', 'TNR', 'TPR', 'FNER', 'FPER',
-            #                       'Black Impact', 'White Impact', 'TNR_B', 'TPR_B', 'FNER_B', 'FPER_B', 'TNR_W',
-            #                       'TPR_W', 'FNER_W', 'FPER_W']
+            combined_fieldnames = ['Run', 'F1_weighted', 'Acc', 'SelectionRate', 'TNR', 'TPR', 'FNER', 'FPER',
+                                   'Black Impact', 'White Impact', 'TNR_B', 'TPR_B', 'FNER_B', 'FPER_B', 'TNR_W',
+                                   'TPR_W', 'FNER_W', 'FPER_W']
             save_dict_in_csv(overall_results_dict, overall_fieldnames,
                              results_path + model_str + '_overall_results.csv')
             save_dict_in_csv(black_results_dict, byrace_fieldnames, results_path + model_str + '_0_results.csv')
             save_dict_in_csv(white_results_dict, byrace_fieldnames, results_path + model_str + '_1_results.csv')
-            #save_dict_in_csv(combined_results_dict, combined_fieldnames,
-            #                 results_path + model_str + '_combined_results.csv')
+            #save_dict_in_csv(combined_results_dict, combined_fieldnames, results_path + model_str + '_combined_results.csv')
 
             # Save overall score results
             columns_data_scores = zip_longest(*all_scores)

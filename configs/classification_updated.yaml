@@ -1,5 +1,5 @@
 data_path: 'data/synthetic_datasets/Demo-0-Lab-0.csv' # path to the dataset csv-file
-results_dir: 'results/demo-0-lab-0/' # directory to save the results
+results_dir: 'results-updated-impact-func/demo-0-lab-0-eg/' # directory to save the results
 weight_idx: 1 # weight index for samples (1 in our runs)
 testset_size: 0.3 # proportion of testset samples in the dataset (e.g. 0.3)
 test_set_variant: 0 # 0= default (testset like trainset), 1= balanced testset, 2= original,true FICO distribution
@@ -12,13 +12,12 @@ di_stds: # standard deviations for impact distributions (rewardTP,penaltyFP)
   - 15
 models: # classifiers used for training
   Decision Tree: 'dt'
-  Gaussian Naive Bayes: 'gnb'
   Logistic Regression: 'lgr'
-  Gradient_Boosted_Trees: 'gbt'
 constraints: # fairness constraints used for training different models
   Demographic Parity: 'DP'
   Equalized Odds: 'EO'
   Equality of Opportunity: 'TPRP'
   False Positive Rate Parity: 'FPRP'
   Error Rate Parity: 'ERP'
+reduction_algo: 'EG'                                              # exponentiated gradient, 'EG' or 'GS'
 save: True # indicator if the results should be saved
