@@ -57,11 +57,11 @@ weight_idx = 1 # weight index for samples (1 in our runs)
 testset_size = 0.3 # proportion of testset samples in the dataset (e.g. 0.3)
 test_set_variant = 0 # 0= default (testset like trainset), 1= balanced testset, 2= original,true FICO distribution
 test_set_bound = 30000 # absolute upper bound for test_set size
-di_means = [100,-100] # means for delayed impact distributions (rewardTP,penaltyFP)
+di_means = [75,-150] # means for delayed impact distributions (rewardTP,penaltyFP)
 di_stds = [15,15] # standard deviations for delayed impact distributions (rewardTP,penaltyFP)
 save = True # indicator if the results should be saved
 models = {'Decision Tree': 'dt','Logistic Regression': 'lgr'}
-model_name = models['Logistic Regression']
+model_name = models['Decision Tree']
 
 overall_results_dict = {}
 black_results_dict = {}
