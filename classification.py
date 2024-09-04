@@ -9,6 +9,7 @@ from scripts.visualization_utils import visual_label_dist, visual_scores_by_race
 from scripts.classification_utils import load_args,prep_data,get_classifier, get_new_scores, add_constraint_and_evaluate,add_values_in_dict, save_dict_in_csv
 
 
+# NOTE: this script runs the fico scores with the impact function that considers TP and FP model outcomes (as seen in AIES paper)
 
 def classify(data_path,results_dir,weight_idx,testset_size, test_set_variant, test_set_bound, di_means, di_stds, models,constraints,save):
     """

@@ -11,9 +11,11 @@ from scripts.classification_utils import load_args, prep_data, get_classifier, g
 from fairlearn.reductions import ExponentiatedGradient, GridSearch, DemographicParity, EqualizedOdds, TruePositiveRateParity,FalsePositiveRateParity, ErrorRateParity
 
 
+#TODO: DONT USE THIS AS ITS UNDER CONSTRUCTION!!
+
 
 # NOTE: this is the script I ran my 'loan_results-updated-impact-func/demo-0-lab-0' results from June 24 2024
-# it needs -config classification.yaml to run
+# it needs -config classification.yaml OR classification_updated.yaml to run
 
 def classify(data_path, results_dir, weight_idx, testset_size, test_set_variant, test_set_bound, di_means, di_stds,
              models, constraints, reduction_algo, save):
@@ -116,10 +118,10 @@ def classify(data_path, results_dir, weight_idx, testset_size, test_set_variant,
 
         # evaluate model
         constraint_str = 'Un-'
+        # TODO: fix combined results piece cuz it's saving the same row multiple times
         results_overall, results_black, results_white = evaluating_model_updated(constraint_str, X_test, y_test, y_predict,
                                                                          di_means, di_stds, sample_weight_test,
                                                                          race_test)
-        # TODO: fix combined results piece cuz it's saving the same row multiple times
         #combined_results = [results_overall[3], results_overall[0], results_overall[5], results_overall[6],
         #                    results_overall[7], results_overall[8], results_overall[9], results_overall[10],
         #                    results_overall[11], results_black[6], results_black[7], results_black[8], results_black[9],
@@ -169,17 +171,18 @@ def classify(data_path, results_dir, weight_idx, testset_size, test_set_variant,
             all_scores.extend([X_b, X_w])
             scores_names.extend([f'{constraint_str.lower()}B', f'{constraint_str.lower()}W'])
 
-            # TODO: fix bug with adding the constraint specific deets for combined results
-            # need it to work like overall results
+            # TODO: fix bug with adding the constraint specific deets for overall results
 
             run_key = f'{model_str} {constraint_str} Mitigated'
             overall_results_dict = add_values_in_dict(overall_results_dict, run_key, results_overall)
+            print(overall_results_dict)
             black_results_dict = add_values_in_dict(black_results_dict, run_key, results_black)
             white_results_dict = add_values_in_dict(white_results_dict, run_key, results_white)
             #combined_results_dict = add_values_in_dict(combined_results_dict, run_key, combined_results)
 
         # save evaluations
         if save == True:
+            print(overall_results_dict)
             overall_fieldnames = ['Run', 'Acc', 'ConfMatrix', 'F1micro', 'F1weighted', 'F1binary', 'SelectionRate',
                                   'TNR rate', 'TPR rate', 'FNER', 'FPER', 'DIB', 'DIW', 'DP Diff', 'EO Diff',
                                   'TPR Diff', 'FPR Diff', 'ER Diff']
