@@ -7,12 +7,12 @@ from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
 from scripts.classification_utils import load_args, prep_data, get_classifier, get_new_scores_updated, \
-    add_constraint_and_evaluate, add_values_in_dict, get_constraint
+    add_constraint_and_evaluate, add_values_in_dict
 from scripts.evaluation_utils import evaluating_model_updated
-from fairlearn.reductions import ExponentiatedGradient, GridSearch, DemographicParity, EqualizedOdds, TruePositiveRateParity,FalsePositiveRateParity, ErrorRateParity
 
 
 # NOTE: this script runs the fico scores with the updated impact function that considers TP, FP, and FN model outcomes (not as seen in AIES paper)
+
 
 def save_dict_in_csv(results_dict, fieldnames, name_csv):
     """
@@ -51,21 +51,16 @@ def save_dict_in_csv(results_dict, fieldnames, name_csv):
 PARAMETER SETTING
 """
 
-# 'DP': DemographicParity, 'EO': EqualizedOdds, 'TPRP': TruePositiveRateParity, 'FPRP': FalsePositiveRateParity, 'ERP': ErrorRateParity
-constraint_str = 'DP'
-constraint = get_constraint(constraint_str)
-# 'GS': Grid Search, 'EG': Exponentiated Gradient
-reduction_algo = 'EG'
 data_path = 'data/synthetic_datasets/Demo-0-Lab-0.csv'# path to the dataset csv-file
-results_path = 'results-updated-impact-func/demo-0-lab-0/'+reduction_algo+constraint_str+'/' # directory to save the results
+results_path = 'results-updated-impact-func/demo-0-lab-0/unmit/' # directory to save the results
 weight_idx = 1 # weight index for samples (1 in our runs)
 testset_size = 0.3 # proportion of testset samples in the dataset (e.g. 0.3)
 test_set_variant = 0 # 0= default (testset like trainset), 1= balanced testset, 2= original,true FICO distribution
 test_set_bound = 30000 # absolute upper bound for test_set size
-di_means = [75,-150] # means for delayed impact distributions (rewardTP,penaltyFP)
+di_means = [100,-100] # means for delayed impact distributions (rewardTP,penaltyFP)
 di_stds = [15,15] # standard deviations for delayed impact distributions (rewardTP,penaltyFP)
 save = True # indicator if the results should be saved
-models = {'Decision Tree': 'dt','Logistic Regression': 'lgr'}
+models = {'Decision Tree': 'dt', 'Gaussian Naive Bayes':'gnb','Logistic Regression': 'lgr', 'Gradient Boosted Trees': 'gbt'}
 model_name = models['Logistic Regression']
 
 overall_results_dict = {}
@@ -96,17 +91,15 @@ for index in range(len(X_test)):
 
 # NOTE: I DIDN'T INCLUDE THE SAVING OF SCORES AND TYPES TO A LIST
 
-
-"""
-MODEL TRAINING
-"""
-
-print('The classifier trained below is: ', model_name)
-
 results_path += f'{model_name}/'
 print(results_path)
 if not os.path.exists(results_path):
     os.makedirs(results_path, exist_ok=True)
+
+
+"""
+MODEL TRAINING
+"""
 
 print('The classifier trained below is: ', model_name)
 if model_name == 'dt':
@@ -126,32 +119,11 @@ y_predict = model.predict(X_test)
 # Scores on test set
 test_scores = model.predict_proba(X_test)[:, 1]
 
-
-"""
-REDUCTION ALGORITHM TIME!!
-"""
-print(constraint_str)
-constraint = get_constraint(constraint_str)
-print('the reduction algorithm is: ', reduction_algo)
-
-if reduction_algo == 'GS':
-    mitigator = GridSearch(model, constraint)
-elif reduction_algo == 'EG':
-    mitigator = ExponentiatedGradient(model, constraint)
-else:
-    print('error: you shouldnt get here...check the yaml parameters and input one of the two reduction algorithms.')
-
-mitigator.fit(X_train, y_train, sensitive_features=race_train)
-
-if reduction_algo == 'GS':
-    y_pred_mitigated = mitigator.predict(X_test)  # y_pred_mitigated
-elif reduction_algo == 'EG':
-    y_pred_mitigated = mitigator.predict(X_test, random_state = 0)  # y_pred_mitigated
-
-
 """
 SAVING RESULTS
 """
+
+constraint_str = 'Un-'
 # results_overall = accuracy, cs_matrix, f1_micro, f1_weighted, f1_binary, round(sr * 100, 2), tnr, tpr, fner, fper,
 #                        di_B, di_W, round(dp_diff * 100, 2), round(eod_diff * 100, 2), round(eoo_dif * 100, 2),
 #                        round(fpr_dif * 100, 2), round(er_dif * 100, 2)]
@@ -164,7 +136,7 @@ combined_results = [results_overall[3], results_overall[0], results_overall[5], 
                     results_white[6], results_white[7], results_white[8], results_white[9]]
 
 
-run_key = f'{model_name+reduction_algo+constraint_str}'
+run_key = f'{constraint_str}-{model_name}'
 overall_results_dict = add_values_in_dict(overall_results_dict, run_key, results_overall)
 black_results_dict = add_values_in_dict(black_results_dict, run_key, results_black)
 white_results_dict = add_values_in_dict(white_results_dict, run_key, results_white)

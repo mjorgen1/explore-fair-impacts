@@ -46,25 +46,27 @@ def save_dict_in_csv(results_dict, fieldnames, name_csv):
 
         csv_file.close()
 
+
+"""
+PARAMETER SETTING
+"""
+
 data_path = 'data/synthetic_datasets/Demo-0-Lab-0.csv'# path to the dataset csv-file
 results_path = 'results-updated-impact-func/cost-mit-fp6-fn5/' # directory to save the results
-
 fp_weight = 6
 fn_weight = 5
 balanced = False
-
 weight_idx = 1 # weight index for samples (1 in our runs)
 testset_size = 0.3 # proportion of testset samples in the dataset (e.g. 0.3)
 test_set_variant = 0 # 0= default (testset like trainset), 1= balanced testset, 2= original,true FICO distribution
 test_set_bound = 30000 # absolute upper bound for test_set size
-
+constraint_str = 'Cost-'
 di_means = [100,-100] # means for delayed impact distributions (rewardTP,penaltyFP)
 di_stds = [15,15] # standard deviations for delayed impact distributions (rewardTP,penaltyFP)
-
 save = True # indicator if the results should be saved
-
 models = {'Decision Tree': 'dt', 'Gaussian Naive Bayes':'gnb','Logistic Regression': 'lgr', 'Gradient Boosted Trees': 'gbt'}
 model_name = models['Logistic Regression']
+
 
 overall_results_dict = {}
 black_results_dict = {}
@@ -73,6 +75,7 @@ combined_results_dict = {}
 all_types = []
 all_scores = []
 scores_names = []
+
 
 data = pd.read_csv(data_path)
 data[['score', 'race']] = data[['score', 'race']].astype(int)
@@ -86,7 +89,6 @@ X_test_w = []
 y_test_b = []
 y_test_w = []
 
-
 for index in range(len(X_test)):
     if race_test[index] == 0:  # black
         X_test_b.append(X_test[index][0])
@@ -97,12 +99,16 @@ for index in range(len(X_test)):
 
 # NOTE: I DIDN'T INCLUDE THE SAVING OF SCORES AND TYPES TO A LIST
 
-print('The classifier trained below is: ', model_name)
-
 results_path += f'{model_name}/'
 print(results_path)
 if not os.path.exists(results_path):
     os.makedirs(results_path, exist_ok=True)
+
+
+"""
+MODEL TRAINING
+"""
+print('The classifier trained below is: ', model_name)
 
 if not balanced:
     classifier = LogisticRegression(class_weight={0:fp_weight, 1:fn_weight})  # so I can add in weights
@@ -125,9 +131,6 @@ y_predict = model.predict(X_test)
 # Scores on test set
 test_scores = model.predict_proba(X_test)[:, 1]
 
-X_unmit_b, X_unmit_w,T_unmit_b, T_unmit_w = get_new_scores_updated(X_test, y_predict, y_test, di_means, di_stds, race_test)
-
-constraint_str = 'Cost-'
 # results_overall = accuracy, cs_matrix, f1_micro, f1_weighted, f1_binary, round(sr * 100, 2), tnr, tpr, fner, fper,
 #                        di_B, di_W, round(dp_diff * 100, 2), round(eod_diff * 100, 2), round(eoo_dif * 100, 2),
 #                        round(fpr_dif * 100, 2), round(er_dif * 100, 2)]
@@ -139,6 +142,10 @@ combined_results = [results_overall[3], results_overall[0], results_overall[5], 
                     results_overall[11], results_black[6], results_black[7], results_black[8], results_black[9],
                     results_white[6], results_white[7], results_white[8], results_white[9]]
 
+
+"""
+SAVING RESULTS
+"""
 
 run_key = f'{model_name}cost-fp{fp_weight}-fn{fn_weight}'
 overall_results_dict = add_values_in_dict(overall_results_dict, run_key, results_overall)
