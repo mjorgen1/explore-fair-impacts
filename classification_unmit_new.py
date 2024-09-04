@@ -60,7 +60,7 @@ test_set_bound = 30000 # absolute upper bound for test_set size
 di_means = [100,-100] # means for delayed impact distributions (rewardTP,penaltyFP)
 di_stds = [15,15] # standard deviations for delayed impact distributions (rewardTP,penaltyFP)
 save = True # indicator if the results should be saved
-models = {'Decision Tree': 'dt', 'Gaussian Naive Bayes':'gnb','Logistic Regression': 'lgr', 'Gradient Boosted Trees': 'gbt'}
+models = {'Decision Tree': 'dt','Logistic Regression': 'lgr'}
 model_name = models['Logistic Regression']
 
 overall_results_dict = {}
