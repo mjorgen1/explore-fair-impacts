@@ -258,6 +258,7 @@ def get_metrics_df(models_dict, y_true, group):
     return pd.DataFrame.from_dict(df_dict, orient='index', columns=models_dict.keys())
 
 
+#TODO: right now, if I want to add randomness to runs, I have to hardcode it here! later, add argument for randomness in the yaml
 def get_classifier(model_name):
     """
         Picks the classification method
@@ -268,12 +269,12 @@ def get_classifier(model_name):
     """
     if model_name == 'dt':
         # Initialize classifier:
-        classifier = DecisionTreeClassifier()
+        classifier = DecisionTreeClassifier()  # NOTE: for aies paper, random state was not an included parameter; it can be included though by random_seed = 0
     elif model_name == 'gnb':
         classifier = GaussianNB()
     elif model_name == 'lgr':
         # Reference: https://towardsdatascience.com/logistic-regression-using-python-sklearn-numpy-mnist-handwriting-recognition-matplotlib-a6b31e2b166a
-        classifier = LogisticRegression(max_iter=100000)
+        classifier = LogisticRegression(max_iter=100000)  # NOTE: for aies paper, random state was not an included parameter; it can be included though by random_seed = 0
     elif model_name == 'gbt':
         # Reference: https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html
         # Note: max_depth default is 3 but tune this parameter for best performance

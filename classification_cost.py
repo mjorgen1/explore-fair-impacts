@@ -3,6 +3,7 @@ import numpy as np
 import csv
 import os
 from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
 from scripts.classification_utils import prep_data, add_values_in_dict
 from scripts.evaluation_utils import evaluating_model
 
@@ -46,10 +47,11 @@ PARAMETER SETTING
 """
 
 data_path = 'data/synthetic_datasets/Demo-0-Lab-0.csv'# path to the dataset csv-file
-results_path = 'results/cost-mit-fp6-fn5/' # directory to save the results
+results_path = 'fico-results/random_seed_0/lgr/cost-mit-fp6-fn5/'  # directory to save the results
 fp_weight = 6
 fn_weight = 5
 balanced = False
+random_bool = True
 weight_idx = 1 # weight index for samples (1 in our runs)
 testset_size = 0.3 # proportion of testset samples in the dataset (e.g. 0.3)
 test_set_variant = 0 # 0= default (testset like trainset), 1= balanced testset, 2= original,true FICO distribution
@@ -58,7 +60,7 @@ constraint_str = 'Cost-'
 di_means = [75,-150] # means for delayed impact distributions (rewardTP,penaltyFP)
 di_stds = [15,15] # standard deviations for delayed impact distributions (rewardTP,penaltyFP)
 save = True # indicator if the results should be saved
-models = {'Logistic Regression': 'lgr'}
+models = {'Decision Tree': 'dt', 'Logistic Regression': 'lgr'}
 model_name = models['Logistic Regression']
 
 
@@ -104,10 +106,31 @@ MODEL TRAINING
 """
 print('The classifier trained below is: ', model_name)
 
-if not balanced:
-    classifier = LogisticRegression(class_weight={0:fp_weight, 1:fn_weight})  # so I can add in weights
+if model_name == 'lgr':
+    if random_bool:
+        if not balanced:
+            classifier = LogisticRegression(class_weight={0:fp_weight, 1:fn_weight}, random_state = 0)
+        else:
+            classifier = LogisticRegression(class_weight='balanced', random_state = 0)
+    else:
+        if not balanced:
+            classifier = LogisticRegression(class_weight={0:fp_weight, 1:fn_weight})
+        else:
+            classifier = LogisticRegression(class_weight='balanced')
+elif model_name == 'dt':
+    if random_bool:
+        if not balanced:
+            classifier = DecisionTreeClassifier(class_weight={0:fp_weight, 1:fn_weight}, random_state = 0)
+        else:
+            classifier = DecisionTreeClassifier(class_weight='balanced', random_state = 0)
+    else:
+        if not balanced:
+            classifier = DecisionTreeClassifier(class_weight={0:fp_weight, 1:fn_weight})
+        else:
+            classifier = DecisionTreeClassifier(class_weight='balanced')
 else:
-    classifier = LogisticRegression(class_weight='balanced')
+    print('error: input an available model, lgr or dt')
+
 # Resource: https://fraud-detection-handbook.github.io/fraud-detection-handbook/Chapter_6_ImbalancedLearning/CostSensitive.html
 # {0:c10 (FP), 1:c01 (FN)}: The misclassification costs are explicitly set for the two classes by means of a dictionary.
 # Conf matrix: [c00,     c01(FN)]
