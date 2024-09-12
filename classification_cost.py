@@ -2,16 +2,10 @@ import pandas as pd
 import numpy as np
 import csv
 import os
-from itertools import zip_longest
-from sklearn.model_selection import train_test_split
-from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
-from scripts.classification_utils import load_args, prep_data, get_classifier, get_new_scores_updated, \
-    add_constraint_and_evaluate, add_values_in_dict
-from scripts.evaluation_utils import evaluating_model_updated
+from scripts.classification_utils import prep_data, add_values_in_dict
+from scripts.evaluation_utils import evaluating_model
 
-
-# NOTE: this script runs the fico scores with the updated impact function that considers TP, FP, and FN model outcomes (not as seen in AIES paper)
 
 
 def save_dict_in_csv(results_dict, fieldnames, name_csv):
@@ -52,21 +46,30 @@ PARAMETER SETTING
 """
 
 data_path = 'data/synthetic_datasets/Demo-0-Lab-0.csv'# path to the dataset csv-file
-results_path = 'results-updated-impact-func/demo-0-lab-0/unmit/' # directory to save the results
+results_path = 'results/cost-mit-fp6-fn5/' # directory to save the results
+fp_weight = 6
+fn_weight = 5
+balanced = False
 weight_idx = 1 # weight index for samples (1 in our runs)
 testset_size = 0.3 # proportion of testset samples in the dataset (e.g. 0.3)
 test_set_variant = 0 # 0= default (testset like trainset), 1= balanced testset, 2= original,true FICO distribution
 test_set_bound = 30000 # absolute upper bound for test_set size
+constraint_str = 'Cost-'
 di_means = [75,-150] # means for delayed impact distributions (rewardTP,penaltyFP)
 di_stds = [15,15] # standard deviations for delayed impact distributions (rewardTP,penaltyFP)
 save = True # indicator if the results should be saved
-models = {'Decision Tree': 'dt','Logistic Regression': 'lgr'}
-model_name = models['Decision Tree']
+models = {'Logistic Regression': 'lgr'}
+model_name = models['Logistic Regression']
+
 
 overall_results_dict = {}
 black_results_dict = {}
 white_results_dict = {}
 combined_results_dict = {}
+all_types = []
+all_scores = []
+scores_names = []
+
 
 data = pd.read_csv(data_path)
 data[['score', 'race']] = data[['score', 'race']].astype(int)
@@ -79,7 +82,6 @@ X_test_b = []
 X_test_w = []
 y_test_b = []
 y_test_w = []
-
 
 for index in range(len(X_test)):
     if race_test[index] == 0:  # black
@@ -100,15 +102,19 @@ if not os.path.exists(results_path):
 """
 MODEL TRAINING
 """
-
 print('The classifier trained below is: ', model_name)
-if model_name == 'dt':
-    classifier = DecisionTreeClassifier(random_state=0)
-elif model_name == 'lgr':
-    # Reference: https://towardsdatascience.com/logistic-regression-using-python-sklearn-numpy-mnist-handwriting-recognition-matplotlib-a6b31e2b166a
-    classifier = LogisticRegression(max_iter=100000, random_state=0)
+
+if not balanced:
+    classifier = LogisticRegression(class_weight={0:fp_weight, 1:fn_weight})  # so I can add in weights
 else:
-    print("error: input an acceptable model name acronoym")
+    classifier = LogisticRegression(class_weight='balanced')
+# Resource: https://fraud-detection-handbook.github.io/fraud-detection-handbook/Chapter_6_ImbalancedLearning/CostSensitive.html
+# {0:c10 (FP), 1:c01 (FN)}: The misclassification costs are explicitly set for the two classes by means of a dictionary.
+# Conf matrix: [c00,     c01(FN)]
+#              [c10(FP), c11]
+
+# Reference: https://www.datacamp.com/community/tutorials/decision-tree-classification-python
+np.random.seed(0)
 
 # Train the classifier:
 model = classifier.fit(X_train,y_train, sample_weight_train)
@@ -119,24 +125,23 @@ y_predict = model.predict(X_test)
 # Scores on test set
 test_scores = model.predict_proba(X_test)[:, 1]
 
-"""
-SAVING RESULTS
-"""
-
-constraint_str = 'Un-'
 # results_overall = accuracy, cs_matrix, f1_micro, f1_weighted, f1_binary, round(sr * 100, 2), tnr, tpr, fner, fper,
 #                        di_B, di_W, round(dp_diff * 100, 2), round(eod_diff * 100, 2), round(eoo_dif * 100, 2),
 #                        round(fpr_dif * 100, 2), round(er_dif * 100, 2)]
 # results_0 = [accuracy_0, cs_m_0, f1_m_0, f1_w_0, f1_b_0, sr_0, tnr_0, tpr_0, fner_0, fper_0, round(di_0, 2)]
 # results_1 = [accuracy_1, cs_m_1, f1_m_1, f1_w_1, f1_b_1, sr_1, tnr_1, tpr_1, fner_1, fper_1, round(di_1, 2)]
-results_overall, results_black, results_white = evaluating_model_updated(constraint_str,X_test,y_test, y_predict, di_means,di_stds, sample_weight_test,race_test)
+results_overall, results_black, results_white = evaluating_model(constraint_str,X_test,y_test, y_predict, di_means,di_stds, sample_weight_test,race_test)
 combined_results = [results_overall[3], results_overall[0], results_overall[5], results_overall[6],
                     results_overall[7], results_overall[8], results_overall[9], results_overall[10],
                     results_overall[11], results_black[6], results_black[7], results_black[8], results_black[9],
                     results_white[6], results_white[7], results_white[8], results_white[9]]
 
 
-run_key = f'{constraint_str}-{model_name}'
+"""
+SAVING RESULTS
+"""
+
+run_key = f'{model_name}cost-fp{fp_weight}-fn{fn_weight}'
 overall_results_dict = add_values_in_dict(overall_results_dict, run_key, results_overall)
 black_results_dict = add_values_in_dict(black_results_dict, run_key, results_black)
 white_results_dict = add_values_in_dict(white_results_dict, run_key, results_white)
