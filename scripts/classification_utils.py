@@ -13,7 +13,7 @@ from sklearn.metrics import balanced_accuracy_score, roc_auc_score
 from fairlearn.reductions import ExponentiatedGradient, DemographicParity, EqualizedOdds, TruePositiveRateParity,FalsePositiveRateParity, ErrorRateParity
 from fairlearn.metrics import *
 
-from scripts.evaluation_utils import evaluating_model, evaluating_model_updated
+from scripts.evaluation_utils import evaluating_model
 
 
 def load_args(file):
@@ -595,46 +595,6 @@ def add_constraint_and_evaluate(model, constraint_str, X_train, y_train, race_tr
     y_pred_mitigated = mitigator.predict(X_test) #y_pred_mitigated
 
     results_overall, results_0, results_1 = evaluating_model(constraint_str,X_test,y_test, y_pred_mitigated, di_means,di_stds, sample_weight_test,race_test)
-
-    if dashboard_bool:
-        pass
-        #FairnessDashboard(sensitive_features=race_test,y_true=y_test,y_pred={"initial model": y_predict, "mitigated model": y_pred_mitigated})
-    return mitigator, results_overall, results_0, results_1, y_pred_mitigated
-
-
-def add_constraint_and_evaluate_updated(model, constraint_str, X_train, y_train, race_train, race_test, X_test, y_test, y_predict, sample_weight_test, dashboard_bool=False, di_means=(0,0),di_stds=(0,0)):
-    """
-    Applying fairness constraint and reduction algorithm on the model.
-        Args:
-            - model <object>: classifier
-            - constraint str <str>: indicator for fairness constraint
-            - X_train <numpy.ndarray>: samples for training
-            - y_train <numpy.ndarray>: labels of training samples
-            - race_train <numpy.ndarray>: sensitive attribute of train samples
-            - race_test <numpy.ndarray>: sensitive attribute of test samples
-            - X_test <numpy.ndarray>: samples for testing
-            - y_test <numpy.ndarray>: predicted labels
-            - y_predicted <numpy.ndarray>: uncontrained model prediction of labels from test set
-            - sample_weight_test <numpy.ndarray>: weights for test samples
-            - dashboard_bool <bool>: can be used to display FairnessDashboard
-            - di_means <tuple>:means of the delayed impact distributions (only necessary when distributions are used)
-            - di_stds <tuple>: deviation of delyed impact distributions (only necessary when distributions are used)
-
-        Returns:
-            - mitigator <object>: model trained with contraint
-            - results_overall <list>: wrapper list with eval results overall
-            - results_0 <list>: wrapper list with eval results disadvantaged group
-            - results_1 <list>: wrapper list with eval results advantaged group
-            - y_pred_mitigated <numpy.ndarray>: predicted test set labels of mitigated,contrained model
-    """
-
-    constraint = get_constraint(constraint_str)
-
-    mitigator = ExponentiatedGradient(model, constraint)
-    mitigator.fit(X_train, y_train, sensitive_features=race_train)
-    y_pred_mitigated = mitigator.predict(X_test) #y_pred_mitigated
-
-    results_overall, results_0, results_1 = evaluating_model_updated(constraint_str,X_test,y_test, y_pred_mitigated, di_means,di_stds, sample_weight_test,race_test)
 
     if dashboard_bool:
         pass
