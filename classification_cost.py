@@ -49,8 +49,8 @@ PARAMETER SETTING
 data_path = 'data/synthetic_datasets/Demo-0-Lab-0.csv'# path to the dataset csv-file
 fp_weight = 6
 fn_weight = 5
-results_path = 'fico-results/random_seed_0/lgr/'+f'cost-fp{fp_weight}-fn{fn_weight}/'  # directory to save the results
-balanced = False
+results_path = 'fico-results/cost-test/'  # directory to save the results
+balanced = True
 random_bool = True
 weight_idx = 1 # weight index for samples (1 in our runs)
 testset_size = 0.3 # proportion of testset samples in the dataset (e.g. 0.3)
@@ -62,6 +62,13 @@ di_stds = [15,15] # standard deviations for delayed impact distributions (reward
 save = True # indicator if the results should be saved
 models = {'Decision Tree': 'dt', 'Logistic Regression': 'lgr'}
 model_name = models['Logistic Regression']
+
+if balanced:
+    run_key = f'{model_name}cost-balance'
+    results_path_full = results_path + model_name + f'/cost-balance/'
+else:
+    run_key = f'{model_name}cost-fp{fp_weight}-fn{fn_weight}'
+    results_path_full = results_path+model_name+f'/cost-fp{fp_weight}-fn{fn_weight}/'
 
 
 overall_results_dict = {}
@@ -95,10 +102,10 @@ for index in range(len(X_test)):
 
 # NOTE: I DIDN'T INCLUDE THE SAVING OF SCORES AND TYPES TO A LIST
 
-results_path += f'{model_name}/'
-print(results_path)
-if not os.path.exists(results_path):
-    os.makedirs(results_path, exist_ok=True)
+results_path_full += f'{model_name}/'
+print(results_path_full)
+if not os.path.exists(results_path_full):
+    os.makedirs(results_path_full, exist_ok=True)
 
 
 """
@@ -164,7 +171,6 @@ combined_results = [results_overall[3], results_overall[0], results_overall[5], 
 SAVING RESULTS
 """
 
-run_key = f'{model_name}cost-fp{fp_weight}-fn{fn_weight}'
 overall_results_dict = add_values_in_dict(overall_results_dict, run_key, results_overall)
 black_results_dict = add_values_in_dict(black_results_dict, run_key, results_black)
 white_results_dict = add_values_in_dict(white_results_dict, run_key, results_white)
@@ -177,8 +183,8 @@ if save == True:
     combined_fieldnames = ['Run', 'F1_weighted', 'Acc', 'SelectionRate', 'TNR', 'TPR', 'FNER', 'FPER',
                            'Black Impact', 'White Impact', 'TNR_B', 'TPR_B', 'FNER_B', 'FPER_B', 'TNR_W', 'TPR_W',
                            'FNER_W', 'FPER_W']
-    save_dict_in_csv(overall_results_dict, overall_fieldnames,  results_path+model_name+'_overall_results.csv')
-    save_dict_in_csv(black_results_dict, byrace_fieldnames,  results_path+model_name+'_black_results.csv')
-    save_dict_in_csv(white_results_dict, byrace_fieldnames,  results_path+model_name+'_white_results.csv')
+    save_dict_in_csv(overall_results_dict, overall_fieldnames,  results_path_full+model_name+'_overall_results.csv')
+    save_dict_in_csv(black_results_dict, byrace_fieldnames,  results_path_full+model_name+'_black_results.csv')
+    save_dict_in_csv(white_results_dict, byrace_fieldnames,  results_path_full+model_name+'_white_results.csv')
     save_dict_in_csv(combined_results_dict, combined_fieldnames,
-                     results_path + model_name + '_combined_results.csv')
+                     results_path_full + model_name + '_combined_results.csv')
