@@ -1,6 +1,8 @@
 from itertools import zip_longest
 import argparse
 import warnings
+from random import random
+
 import pandas as pd
 import os
 import numpy as np
@@ -17,7 +19,7 @@ from fairlearn.reductions import ExponentiatedGradient, GridSearch, DemographicP
 
 
 
-def ml_pipeline(data_path, results_dir, weight_idx, testset_size, mitigated, balanced, fp_weight, fn_weight, model_name, reduction_algo, constraint_name, save):
+def ml_pipeline(data_path, results_dir, weight_idx, testset_size, mitigated, balanced, fp_weight, fn_weight, model_name, reduction_algo, constraint_name, save, random_bool):
     """
     Classification and evaluation function for the german datasets
     Args:
@@ -144,9 +146,15 @@ def ml_pipeline(data_path, results_dir, weight_idx, testset_size, mitigated, bal
         print("made it in the unmitigated or reduction thread")
         print('The classifier trained below is: ', model_name)
         if model_name == 'dt':
-            classifier = DecisionTreeClassifier(random_state=0)
+            if random_bool:
+                classifier = DecisionTreeClassifier(random_state=0)
+            else:
+                classifier = DecisionTreeClassifier()
         elif model_name == 'lgr':
-            classifier = LogisticRegression(max_iter=100000, random_state=0)
+            if random_bool:
+                classifier = LogisticRegression(max_iter=100000, random_state=0)
+            else:
+                classifier = LogisticRegression(max_iter=100000)
         else:
             print("error: input an acceptable model name acronoym")
 
@@ -184,17 +192,31 @@ def ml_pipeline(data_path, results_dir, weight_idx, testset_size, mitigated, bal
         #              [c10(FP), c11]
 
         if model_name == 'lgr':
-            if not balanced:
-                classifier = LogisticRegression(class_weight={0: fp_weight, 1: fn_weight},
-                                                max_iter=max_iterations, random_state=0)  # so I can add in weights
+            if random_bool:
+                if not balanced:
+                    classifier = LogisticRegression(class_weight={0: fp_weight, 1: fn_weight},
+                                                    max_iter=max_iterations, random_state=0)  # so I can add in weights
+                else:
+                    print('lgr and balanced')
+                    classifier = LogisticRegression(class_weight='balanced', max_iter=max_iterations, random_state=0)
             else:
-                print('lgr and balanced')
-                classifier = LogisticRegression(class_weight='balanced', max_iter=max_iterations, random_state=0)
+                if not balanced:
+                    classifier = LogisticRegression(class_weight={0: fp_weight, 1: fn_weight},
+                                                    max_iter=max_iterations)  # so I can add in weights
+                else:
+                    print('lgr and balanced')
+                    classifier = LogisticRegression(class_weight='balanced', max_iter=max_iterations)
         elif model_name == 'dt':
-            if not balanced:
-                classifier = DecisionTreeClassifier(class_weight={0: fp_weight, 1: fn_weight}, random_state=0)
+            if random_bool:
+                if not balanced:
+                    classifier = DecisionTreeClassifier(class_weight={0: fp_weight, 1: fn_weight}, random_state=0)
+                else:
+                    classifier = DecisionTreeClassifier(class_weight='balanced', random_state=0)
             else:
-                classifier = DecisionTreeClassifier(class_weight='balanced', random_state=0)
+                if not balanced:
+                    classifier = DecisionTreeClassifier(class_weight={0: fp_weight, 1: fn_weight})
+                else:
+                    classifier = DecisionTreeClassifier(class_weight='balanced')
         else:
             print("Error: we shouldn't end up here")
 

@@ -47,9 +47,9 @@ PARAMETER SETTING
 """
 
 data_path = 'data/synthetic_datasets/Demo-0-Lab-0.csv'# path to the dataset csv-file
-results_path = 'fico-results/random_seed_0/lgr/cost-mit-fp6-fn5/'  # directory to save the results
 fp_weight = 6
 fn_weight = 5
+results_path = 'fico-results/random_seed_0/lgr/'+f'cost-fp{fp_weight}-fn{fn_weight}/'  # directory to save the results
 balanced = False
 random_bool = True
 weight_idx = 1 # weight index for samples (1 in our runs)
