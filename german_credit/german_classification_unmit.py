@@ -54,6 +54,7 @@ test_size = 0.3 # proportion of testset samples in the dataset (e.g. 0.3)
 save = True # indicator if the results should be saved
 models = {'Decision Tree': 'dt', 'Logistic Regression': 'lgr'}
 model_name = models['Logistic Regression']
+random_bool = False
 scale_data = False
 constraint_str = 'Unmit'
 run_key = f'{model_name+constraint_str}'
@@ -112,10 +113,16 @@ MODEL TRAINING
 
 print('The classifier trained below is: ', model_name)
 if model_name == 'dt':
-    classifier = DecisionTreeClassifier(random_state=0)
+    if random_bool:
+        classifier = DecisionTreeClassifier(random_state=0)
+    else:
+        classifier = DecisionTreeClassifier()
 elif model_name == 'lgr':
-    # Reference: https://towardsdatascience.com/logistic-regression-using-python-sklearn-numpy-mnist-handwriting-recognition-matplotlib-a6b31e2b166a
-    classifier = LogisticRegression(max_iter=100000, random_state=0)
+    if random_bool:
+        # Reference: https://towardsdatascience.com/logistic-regression-using-python-sklearn-numpy-mnist-handwriting-recognition-matplotlib-a6b31e2b166a
+        classifier = LogisticRegression(max_iter=100000, random_state=0)
+    else:
+        classifier = LogisticRegression(max_iter=100000)
 else:
     print("error: input an acceptable model name acronoym")
 

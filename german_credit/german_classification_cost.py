@@ -54,7 +54,7 @@ fn_weight = 5
 balanced = False
 # this is what the lgr for the unmitigated lgr is
 max_iterations = 100000
-
+random_bool = False
 results_path = 'german_results/cost_sens/' # directory to save the results
 weight_idx = 1 # weight index for samples (1 in our runs)
 test_size = 0.3 # proportion of testset samples in the dataset (e.g. 0.3)
@@ -124,15 +124,27 @@ MODEL TRAINING
 """
 
 if model_name == 'lgr':
-    if not balanced:
-        classifier = LogisticRegression(class_weight={0:fp_weight, 1:fn_weight}, max_iter=max_iterations, random_state=0)  # so I can add in weights
+    if random_bool:
+        if not balanced:
+            classifier = LogisticRegression(class_weight={0:fp_weight, 1:fn_weight}, max_iter=max_iterations, random_state=0)  # so I can add in weights
+        else:
+            classifier = LogisticRegression(class_weight='balanced', max_iter=max_iterations, random_state=0)
     else:
-        classifier = LogisticRegression(class_weight='balanced', max_iter=max_iterations, random_state=0)
+        if not balanced:
+            classifier = LogisticRegression(class_weight={0:fp_weight, 1:fn_weight}, max_iter=max_iterations)  # so I can add in weights
+        else:
+            classifier = LogisticRegression(class_weight='balanced', max_iter=max_iterations)
 elif model_name == 'dt':
-    if not balanced:
-        classifier = DecisionTreeClassifier(class_weight={0: fp_weight, 1: fn_weight}, random_state=0)
+    if random_bool:
+        if not balanced:
+            classifier = DecisionTreeClassifier(class_weight={0: fp_weight, 1: fn_weight}, random_state=0)
+        else:
+            classifier = DecisionTreeClassifier(class_weight='balanced', random_state=0)
     else:
-        classifier = DecisionTreeClassifier(class_weight='balanced', random_state=0)
+        if not balanced:
+            classifier = DecisionTreeClassifier(class_weight={0: fp_weight, 1: fn_weight})
+        else:
+            classifier = DecisionTreeClassifier(class_weight='balanced')
 else:
     print("error: shouldn't get here")
 # Resource: https://fraud-detection-handbook.github.io/fraud-detection-handbook/Chapter_6_ImbalancedLearning/CostSensitive.html

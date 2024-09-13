@@ -52,7 +52,7 @@ constraint_str = 'TPRP'
 constraint = get_constraint(constraint_str)
 # 'GS': Grid Search, 'EG': Exponentiated Gradient
 reduction_algo = 'GS'
-
+random_bool = False
 results_path = 'german_results/reductions/' # directory to save the results
 weight_idx = 1 # weight index for samples (1 in our runs)
 test_size = 0.3 # proportion of testset samples in the dataset (e.g. 0.3)
@@ -109,10 +109,16 @@ MODEL TRAINING
 
 print('The classifier trained below is: ', model_name)
 if model_name == 'dt':
-    classifier = DecisionTreeClassifier(random_state=0)
+    if random_bool:
+        classifier = DecisionTreeClassifier(random_state=0)
+    else:
+        classifier = DecisionTreeClassifier()
 elif model_name == 'lgr':
-    # Reference: https://towardsdatascience.com/logistic-regression-using-python-sklearn-numpy-mnist-handwriting-recognition-matplotlib-a6b31e2b166a
-    classifier = LogisticRegression(max_iter=100000, random_state=0)
+    if random_bool:
+        # Reference: https://towardsdatascience.com/logistic-regression-using-python-sklearn-numpy-mnist-handwriting-recognition-matplotlib-a6b31e2b166a
+        classifier = LogisticRegression(max_iter=100000, random_state=0)
+    else:
+        classifier = LogisticRegression(max_iter=100000)
 else:
     print("error: input an acceptable model name acronoym")
 
