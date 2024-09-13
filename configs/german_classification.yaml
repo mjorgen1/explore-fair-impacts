@@ -18,3 +18,4 @@ constraint_name: 'FPRP'                                            # fairness co
                                                                   #False Positive Rate Parity: 'FPRP'
                                                                   #Error Rate Parity: 'ERP'
 save: True                                                        # indicator if the results should be saved
+random_bool: False
