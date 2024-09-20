@@ -1,0 +1,25 @@
+data_path: 'data/synthetic_datasets/Demo-0-Lab-0.csv' # path to the dataset csv-file
+results_dir: 'fico-results/lgr_no_random_seed/grid_search/' # directory to save the results
+weight_idx: 1 # weight index for samples (1 in our runs)
+testset_size: 0.3 # proportion of testset samples in the dataset (e.g. 0.3)
+test_set_variant: 0 # 0= default (testset like trainset), 1= balanced testset, 2= original,true FICO distribution
+test_set_bound: 30000 # absolute upper bound for test_set size
+di_means: # means for impact distributions (rewardTP,penaltyFP)
+  - 75
+  - -150
+di_stds: # standard deviations for impact distributions (rewardTP,penaltyFP)
+  - 15
+  - 15
+models: # classifiers used for training
+  Decision Tree: 'dt'
+  Logistic Regression: 'lgr'
+#  Gaussian Naive Bayes: 'gnb'
+#  Gradient_Boosted_Trees: 'gbt'
+constraints: # fairness constraints used for training different models
+  Demographic Parity: 'DP'
+  Equalized Odds: 'EO'
+  Equality of Opportunity: 'TPRP'
+  False Positive Rate Parity: 'FPRP'
+  Error Rate Parity: 'ERP'
+reduction_alg: 'GS'  # 'GS': Grid Search or 'EG' for Exponentiated Gradient
+save: True # indicator if the results should be saved
