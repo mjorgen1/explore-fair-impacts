@@ -9,23 +9,28 @@ german_data_path = 'german_credit/german_data.csv'
 
 
 # Load and extract data
+# FICO Data
 data_fico = pd.read_csv(fico_data_path)
 data_fico[['score', 'race']] = data_fico[['score', 'race']].astype(int)
 x_fico = data_fico[['score', 'race']].values
 y_fico = data_fico['repay_indices'].values
 
+# German Data
 data_german = pd.read_csv(german_data_path)
 # drop credit and then re-add it to the end of the dataframe
 x_german = data_german.drop(['credit'], axis=1)
 # Y labels needed to be 0s and 1s
 # target label is credit, 1 (Good)-->1 or 2 (Bad)-->0
 y_german = data_german['credit']
+print('original labels',y_german)
 
 # print(y)
-y_changed_0s = y_german.replace(to_replace=1, value=0) # og bit in my code
 y_german = y_german.replace(to_replace=2, value=0)
-# print(y_changed_0s)
-#y_german = y_changed_0s_new.replace(to_replace=2, value=1) # og bit in my code
+print('updated labels', y_german)
+# The below lines with replace weren't quite right actually
+#y_changed_0s = y_german.replace(to_replace=1, value=0) # old bit in my code
+#y_german = y_changed_0s_new.replace(to_replace=2, value=1) # old bit in my code
+
 
 # TODO: check what values the races / ages are, 0 is disadvantaged and 1 is advantaged
 

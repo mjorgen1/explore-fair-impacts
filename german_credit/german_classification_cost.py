@@ -38,24 +38,23 @@ x = german_data.drop(['credit'], axis=1)
 # Y labels needed to be 0s and 1s
 # target label is credit, 1 (Good)-->0 or 2 (Bad)-->1
 y = german_data['credit']
-#print(y)
-y_changed_0s = y.replace(to_replace=1, value=0)
-#print(y_changed_0s)
-y = y_changed_0s.replace(to_replace=2, value=1)
-#print(y)
+y = y.replace(to_replace=2, value=0)
+#print('updated labels',y)
+# NOTE: The below lines with replace weren't quite right actually
+# y_changed_0s = y.replace(to_replace=1, value=0)
+# y = y_changed_0s.replace(to_replace=2, value=1)
 
 
 """
 PARAMETER SETTING
 """
-
-fp_weight = 10
-fn_weight = 5
-balanced = False
+fp_weight = 5
+fn_weight = 4
+balanced = True
 # this is what the lgr for the unmitigated lgr is
 max_iterations = 100000
 random_bool = False
-results_path = 'german_results/cost_sens/' # directory to save the results
+results_path = 'german_results/mit_cost/' # directory to save the results
 weight_idx = 1 # weight index for samples (1 in our runs)
 test_size = 0.3 # proportion of testset samples in the dataset (e.g. 0.3)
 save = True # indicator if the results should be saved

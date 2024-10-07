@@ -12,7 +12,6 @@ from scripts.classification_utils import load_args, prep_data, get_classifier, g
 
 # NOTE: this script runs the fico scores with the impact function that considers TP and FP model outcomes (as seen in AIES paper)
 # This script is almost identical to classification.py but it has an additional argument that specifies which
-# TODO: in the classification_utils.py add a function that allows for grid search as the reduction alg of choice
 
 def classify(data_path, results_dir, weight_idx, testset_size, test_set_variant, test_set_bound, di_means, di_stds,
              models, constraints, reduction_alg, save):
@@ -125,8 +124,10 @@ def classify(data_path, results_dir, weight_idx, testset_size, test_set_variant,
         for constraint_str in constraints.values():
             print(constraint_str)
             if reduction_alg == 'EG':
+                print('exponentiated gradient reduction happening...')
                 mitigator, results_overall, results_black, results_white, y_pred_mitigated = add_constraint_and_evaluate(model, constraint_str, X_train, y_train, race_train, race_test, X_test, y_test, y_predict, sample_weight_test, False, di_means, di_stds, )
             elif reduction_alg == 'GS':
+                print('grid search reduction happening...')
                 mitigator, results_overall, results_black, results_white, y_pred_mitigated = add_constraint_and_evaluate_gs(model, constraint_str, X_train, y_train, race_train, race_test, X_test, y_test, y_predict, sample_weight_test, False, di_means, di_stds, )
             else:
                 print('incorrect reduction algorithm argument included--you must use EG or GS')

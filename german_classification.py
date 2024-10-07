@@ -55,11 +55,11 @@ def ml_pipeline(data_path, results_dir, weight_idx, testset_size, mitigated, bal
     # Y labels needed to be 0s and 1s
     # target label is credit, 1 (Good)-->0 or 2 (Bad)-->1
     y = data['credit']
-    # print(y)
-    y_changed_0s = y.replace(to_replace=1, value=0)
-    # print(y_changed_0s)
-    y = y_changed_0s.replace(to_replace=2, value=1)
-    # print(y)
+    y = y.replace(to_replace=2, value=0)
+    #print('updated labels', y)
+    # The below lines with replace weren't quite right actually
+    #y_changed_0s = y.replace(to_replace=1, value=0) #OLD, wrong way to do this
+    #y = y_changed_0s.replace(to_replace=2, value=1)
 
     """
     PARAMETER SETTING

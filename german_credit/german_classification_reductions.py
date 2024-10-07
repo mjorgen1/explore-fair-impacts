@@ -37,28 +37,29 @@ x = german_data.drop(['credit'], axis=1)
 # Y labels needed to be 0s and 1s
 # target label is credit, 1 (Good)-->0 or 2 (Bad)-->1
 y = german_data['credit']
+y = y.replace(to_replace=2, value=0)
+#print('updated labels',y)
 #print(y)
-y_changed_0s = y.replace(to_replace=1, value=0)
-#print(y_changed_0s)
-y = y_changed_0s.replace(to_replace=2, value=1)
-#print(y)
+# NOTE: The below lines with replace weren't quite right actually
+# y_changed_0s = y.replace(to_replace=1, value=0)
+# y = y_changed_0s.replace(to_replace=2, value=1)
 
 
 """
 PARAMETER SETTING
 """
 # 'DP': DemographicParity, 'EO': EqualizedOdds, 'TPRP': TruePositiveRateParity, 'FPRP': FalsePositiveRateParity, 'ERP': ErrorRateParity
-constraint_str = 'TPRP'
+constraint_str = 'DP'
 constraint = get_constraint(constraint_str)
 # 'GS': Grid Search, 'EG': Exponentiated Gradient
 reduction_algo = 'GS'
 random_bool = False
-results_path = 'german_results/reductions/' # directory to save the results
+results_path = 'german_results/reductions-gs/' # directory to save the results
 weight_idx = 1 # weight index for samples (1 in our runs)
 test_size = 0.3 # proportion of testset samples in the dataset (e.g. 0.3)
 save = True # indicator if the results should be saved
 models = {'Decision Tree': 'dt','Logistic Regression': 'lgr'}
-model_name = models['Decision Tree']
+model_name = models['Logistic Regression']
 run_key = f'{model_name+constraint_str}'
 results_path_full = results_path+model_name+constraint_str+'/'
 
