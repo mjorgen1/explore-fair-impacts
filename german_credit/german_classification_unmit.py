@@ -35,7 +35,7 @@ german_data = pd.read_csv(filepath_or_buffer='german_data.csv')
 x = german_data.drop(['credit'], axis=1)
 
 # Y labels needed to be 0s and 1s
-# target label is credit, 1 (Good)-->0 or 2 (Bad)-->1
+# target label is credit, 1 (Good) remains or 2 (Bad)-->0
 y = german_data['credit']
 y = y.replace(to_replace=2, value=0)
 #print(y)

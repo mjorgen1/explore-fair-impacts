@@ -53,7 +53,7 @@ def ml_pipeline(data_path, results_dir, weight_idx, testset_size, mitigated, bal
     x = data.drop(['credit'], axis=1)
 
     # Y labels needed to be 0s and 1s
-    # target label is credit, 1 (Good)-->0 or 2 (Bad)-->1
+    # target label is credit, 1 (Good) or 2 (Bad)-->0
     y = data['credit']
     y = y.replace(to_replace=2, value=0)
     #print('updated labels', y)
